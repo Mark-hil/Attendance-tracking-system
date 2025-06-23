@@ -1,0 +1,148 @@
+{% extends 'members/base2.html' %} 
+{% block title %}Member List{% endblock %} 
+{% block content %}
+
+<div class="w-full max-w-6xl mx-auto px-4 my-10">
+  <!-- Header with decorative elements -->
+  <div class="relative mb-6 md:mb-8 text-center">
+    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+      Church Members
+    </h1>
+    <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-1.5 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
+    <p class="text-gray-500 mt-2 text-sm md:text-base">Manage and view all registered members</p>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-gray-100">
+    <!-- Action Buttons and Search Bar -->
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+      <!-- Export Buttons -->
+      <div class="flex flex-wrap gap-2 md:gap-3">
+        <a href="{% url 'export_members_csv' %}" class="flex items-center px-3 md:px-4 py-2 md:py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white font-medium rounded-lg shadow-md hover:from-green-600 hover:to-green-700 transition-all duration-300 hover:shadow-lg text-sm md:text-base">
+          <i class="fas fa-file-csv mr-1 md:mr-2"></i> Export to CSV
+        </a>
+        <a href="{% url 'print_badges' %}" class="flex items-center px-3 md:px-4 py-2 md:py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-lg shadow-md hover:from-blue-600 hover:to-blue-700 transition-all duration-300 hover:shadow-lg text-sm md:text-base">
+          <i class="fas fa-id-card mr-1 md:mr-2"></i> Print Badges
+        </a>
+      </div>
+      
+      <!-- Search Form -->
+      <div class="relative w-full md:w-64 lg:w-80">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+          <i class="fas fa-search"></i>
+        </span>
+        <input 
+          type="text" 
+          id="search" 
+          class="w-full pl-10 pr-4 py-2.5 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" 
+          placeholder="Search members..." 
+          onkeyup="searchMembers()"
+        >
+      </div>
+    </div>
+    
+    <!-- Table Instructions for Mobile -->
+    <div class="md:hidden mb-4 bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
+      <p><i class="fas fa-info-circle mr-1"></i> Swipe horizontally to view all member details</p>
+    </div>
+    
+    <!-- Responsive Table with Horizontal Scroll on Mobile -->
+    <div class="overflow-x-auto rounded-lg border border-gray-200">
+      <table id="member-table" class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Picture</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">First Name</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Name</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Program</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DOB</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guardian</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guardian Phone</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% include 'members/member_list_rows.html' %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- Quick Stats Card -->
+  <div class="mt-6 md:mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+    <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 shadow-lg text-white">
+      <div class="flex items-center">
+        <div class="p-3 bg-white/20 rounded-lg">
+          <i class="fas fa-users text-xl md:text-2xl"></i>
+        </div>
+        <div class="ml-4">
+          <p class="text-white/80 text-xs md:text-sm">Total Members</p>
+          <h3 class="text-xl md:text-2xl font-bold">{{ member_count|default:"0" }}</h3>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 shadow-lg text-white">
+      <div class="flex items-center">
+        <div class="p-3 bg-white/20 rounded-lg">
+          <i class="fas fa-user-check text-xl md:text-2xl"></i>
+        </div>
+        <div class="ml-4">
+          <p class="text-white/80 text-xs md:text-sm">Active Members</p>
+          <h3 class="text-xl md:text-2xl font-bold">{{ active_count|default:"0" }}</h3>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 shadow-lg text-white">
+      <div class="flex items-center">
+        <div class="p-3 bg-white/20 rounded-lg">
+          <i class="fas fa-calendar-check text-xl md:text-2xl"></i>
+        </div>
+        <div class="ml-4">
+          <p class="text-white/80 text-xs md:text-sm">New This Month</p>
+          <h3 class="text-xl md:text-2xl font-bold">{{ new_members|default:"0" }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript for Real-Time Search -->
+<script>
+  function searchMembers() {
+    const query = document.getElementById('search').value;
+    fetch(`?q=${query}`, {
+      method: 'GET',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.text())
+    .then(html => {
+      document.querySelector('#member-table tbody').innerHTML = html;
+    });
+  }
+  
+  // Add animation to table rows
+  document.addEventListener('DOMContentLoaded', function() {
+    const tableRows = document.querySelectorAll('#member-table tbody tr');
+    tableRows.forEach((row, index) => {
+      row.style.opacity = '0';
+      row.style.transform = 'translateY(10px)';
+      row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      
+      setTimeout(() => {
+        row.style.opacity = '1';
+        row.style.transform = 'translateY(0)';
+      }, 50 + (index * 30));
+    });
+  });
+</script>
+{% endblock %}

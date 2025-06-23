@@ -1,0 +1,8 @@
+<!-- members/templates/members/attendance.html -->
+{% extends 'members/base.html' %} {% block content %}
+<h1>Track Attendance</h1>
+<form method="post" action="{% url 'track_attendance' event_type='worship' event_id=1 %}">
+    {% csrf_token %} {{ form.as_p }}
+    <button type="submit">Mark Attendance</button>
+</form>
+{% endblock %}

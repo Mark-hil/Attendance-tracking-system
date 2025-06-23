@@ -1,0 +1,171 @@
+{% extends 'members/base2.html' %} 
+{% load widget_tweaks %} 
+{% block title %}Add Member{% endblock %} 
+{% block content %}
+
+<div class="w-full max-w-6xl mx-auto px-4 my-10">
+  <div class="bg-white rounded-2xl shadow-xl p-4 md:p-6 transition-all duration-300 hover:shadow-2xl border border-gray-100">
+    <!-- Header with decorative elements -->
+    <div class="relative mb-8 md:mb-10 text-center">
+      <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+        Add New Member
+      </h1>
+      <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-1.5 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
+      <p class="text-gray-500 mt-2 text-sm md:text-base">Complete the form below to register a new member</p>
+    </div>
+
+    <!-- Form with enhanced styling -->
+    <form method="post" enctype="multipart/form-data" class="space-y-6 md:space-y-8" novalidate>
+      {% csrf_token %}
+
+      <!-- First and Last Name Fields Side by Side -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+        <div class="space-y-2">
+          <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+            First Name <span class="text-orange-500">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+              <i class="fas fa-user"></i>
+            </span>
+            {{ form.first_name|add_class:"w-full pl-10 pr-4 py-3 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" }}
+          </div>
+          <div class="text-red-500 text-xs mt-1 hidden peer-invalid:block">Please provide a valid first name.</div>
+        </div>
+        
+        <div class="space-y-2">
+          <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+            Last Name <span class="text-orange-500">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+              <i class="fas fa-user"></i>
+            </span>
+            {{ form.last_name|add_class:"w-full pl-10 pr-4 py-3 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" }}
+          </div>
+          <div class="text-red-500 text-xs mt-1 hidden peer-invalid:block">Please provide a valid last name.</div>
+        </div>
+      </div>
+
+      <!-- Email Field Full Width with Icon -->
+      <div class="space-y-2">
+        <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+          Email Address <span class="text-orange-500">*</span>
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+            <i class="fas fa-envelope"></i>
+          </span>
+          {{ form.email|add_class:"w-full pl-10 pr-4 py-3 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" }}
+        </div>
+        <div class="text-red-500 text-xs mt-1 hidden peer-invalid:block">Please provide a valid email address.</div>
+      </div>
+
+      <!-- Other Fields in a Grid Layout -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 md:gap-x-8 gap-y-4 md:gap-y-6">
+        {% for field in form %}
+        {% if field.name not in "first_name last_name email" %}
+        <div class="space-y-2">
+          <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+            {{ field.label }} {% if field.field.required %}<span class="text-orange-500">*</span>{% endif %}
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+              {% if field.name == 'phone_number' %}
+                <i class="fas fa-phone"></i>
+              {% elif field.name == 'date_of_birth' %}
+                <i class="fas fa-calendar"></i>
+              {% elif field.name == 'address' %}
+                <i class="fas fa-map-marker-alt"></i>
+              {% elif field.name == 'gender' %}
+                <i class="fas fa-venus-mars"></i>
+              {% elif field.name == 'profile_picture' %}
+                <i class="fas fa-camera"></i>
+              {% else %}
+                <i class="fas fa-info-circle"></i>
+              {% endif %}
+            </span>
+            {{ field|add_class:"w-full pl-10 pr-4 py-3 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" }}
+          </div>
+          <div class="text-red-500 text-xs mt-1 hidden peer-invalid:block">
+            Please provide a valid {{ field.label|lower }}.
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+
+      <!-- Form Actions with Enhanced Buttons -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8 md:mt-10 pt-6 border-t border-gray-100">
+        <button
+          type="submit"
+          class="w-full sm:w-auto px-6 md:px-8 py-3 md:py-3.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium rounded-lg shadow-md hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transform transition-all duration-300 hover:scale-[1.02] flex items-center justify-center"
+        >
+          <i class="fas fa-user-plus mr-2"></i> Add Member
+        </button>
+        <a
+          href="{% url 'member_list' %}"
+          class="w-full sm:w-auto px-6 md:px-8 py-3 md:py-3.5 border-2 border-orange-500 text-orange-500 font-medium rounded-lg hover:bg-orange-500 hover:text-white transition-colors duration-300 text-center flex items-center justify-center"
+        >
+          <i class="fas fa-arrow-left mr-2"></i> Back to Member List
+        </a>
+      </div>
+    </form>
+  </div>
+  
+  <!-- Help Card -->
+  <div class="mt-6 md:mt-8 bg-blue-50 border border-blue-100 rounded-xl p-4 shadow-sm">
+    <div class="flex items-start">
+      <div class="flex-shrink-0 pt-0.5">
+        <i class="fas fa-info-circle text-blue-500 text-xl"></i>
+      </div>
+      <div class="ml-3">
+        <h3 class="text-sm font-medium text-blue-800">Tips for adding members</h3>
+        <div class="mt-2 text-xs md:text-sm text-blue-700">
+          <ul class="list-disc pl-5 space-y-1">
+            <li>All fields marked with <span class="text-orange-500">*</span> are required</li>
+            <li>Phone numbers should be entered with country code</li>
+            <li>Profile pictures should be clear headshots</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Form validation feedback
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll("form[novalidate] input, form[novalidate] select, form[novalidate] textarea").forEach(function(input) {
+      input.addEventListener("invalid", function() {
+        this.classList.add("border-red-500", "ring-red-500", "bg-red-50");
+        let errorDiv = this.parentElement.nextElementSibling;
+        if (errorDiv && errorDiv.classList.contains("text-red-500")) {
+          errorDiv.classList.remove("hidden");
+        }
+      });
+      
+      input.addEventListener("input", function() {
+        this.classList.remove("border-red-500", "ring-red-500", "bg-red-50");
+        let errorDiv = this.parentElement.nextElementSibling;
+        if (errorDiv && errorDiv.classList.contains("text-red-500")) {
+          errorDiv.classList.add("hidden");
+        }
+      });
+    });
+    
+    // Add animation to form fields
+    const formFields = document.querySelectorAll('input, select, textarea');
+    formFields.forEach((field, index) => {
+      field.style.opacity = '0';
+      field.style.transform = 'translateY(20px)';
+      field.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      
+      setTimeout(() => {
+        field.style.opacity = '1';
+        field.style.transform = 'translateY(0)';
+      }, 100 + (index * 50));
+    });
+  });
+</script>
+{% endblock %}

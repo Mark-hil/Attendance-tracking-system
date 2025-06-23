@@ -1,0 +1,68 @@
+<!-- members/templates/members/print_badges.html -->
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Badges</title>
+    <style>
+        .badge-container {
+            background-image: url("{% static 'img/denim.png' %}");
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .badge {
+            width: 200px;
+            height: 300px;
+            border: 1px solid #000;
+            padding: 20px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            page-break-inside: avoid;
+        }
+        
+        .badge img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .badge-name {
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        @media print {
+            .badge-container {
+                page-break-inside: avoid;
+            }
+            .badge {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1 style="text-align:center;">Member Badges</h1>
+    <div class="badge-container">
+        {% for member in members %}
+    <div class="badge">
+        <img src="{% url 'view_qr_code' member.id %}" alt="QR Code">  <!-- ✅ Correct way -->
+        <div class="badge-name">{{ member.first_name }} {{ member.last_name }}</div>
+    </div>
+    {% endfor %}
+    </div>
+
+    <script>
+        window.print(); // Automatically trigger the print dialog
+    </script>
+</body>
+
+</html>

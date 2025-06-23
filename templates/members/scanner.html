@@ -1,0 +1,331 @@
+{% extends 'members/base2.html' %}
+{% block title %}QR Code Scanner{% endblock %}
+{% block content %}
+
+<div class="w-full max-w-6xl mx-auto px-4 my-10">
+  <!-- Header with decorative elements -->
+  <div class="relative mb-8 md:mb-10 text-center">
+    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+      QR Code Scanner
+    </h1>
+    <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-1.5 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
+    <p class="text-gray-500 mt-2 text-sm md:text-base">Scan member QR codes to record attendance</p>
+  </div>
+  
+  <!-- Scanner Section -->
+  <div class="bg-white rounded-2xl shadow-xl p-4 md:p-6 transition-all duration-300 hover:shadow-2xl border border-gray-100">
+    <div class="flex flex-col items-center">
+      <!-- Scanner Container with enhanced styling -->
+      <div class="relative w-full max-w-md">
+        <div class="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-600 rounded-xl opacity-50 blur-lg transform -rotate-3"></div>
+        <div id="qr-reader" class="relative w-full max-w-md border-2 border-orange-500 rounded-xl overflow-hidden bg-white shadow-lg"></div>
+      </div>
+      
+      <!-- Scanner Status -->
+      <div class="mt-6 bg-orange-50 border border-orange-100 rounded-lg p-3 w-full max-w-md">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-camera text-orange-500 text-lg"></i>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-orange-800">Camera is active</p>
+            <p class="text-xs text-orange-700 mt-1">Position QR code in the frame to scan</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Loading Indicator -->
+      <div id="loading" class="hidden mt-6 bg-blue-50 border border-blue-100 rounded-lg p-3 w-full max-w-md">
+        <div class="flex items-center">
+          <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
+          <div>
+            <p class="text-sm font-medium text-blue-800">Processing scan</p>
+            <p class="text-xs text-blue-700 mt-1">Please wait while we verify the QR code</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Instructions Card -->
+  <div class="mt-6 md:mt-8 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-5 shadow-sm">
+    <div class="flex items-start">
+      <div class="flex-shrink-0 p-2 bg-blue-100 rounded-full">
+        <i class="fas fa-info-circle text-blue-600 text-lg"></i>
+      </div>
+      <div class="ml-4">
+        <h3 class="text-base font-medium text-blue-800">How to scan QR codes</h3>
+        <div class="mt-3 text-sm text-blue-700 space-y-3">
+          <div class="flex items-center">
+            <div class="flex-shrink-0 h-6 w-6 bg-blue-200 rounded-full flex items-center justify-center mr-2">
+              <span class="text-blue-700 font-medium">1</span>
+            </div>
+            <p>Position the QR code within the scanner frame</p>
+          </div>
+          <div class="flex items-center">
+            <div class="flex-shrink-0 h-6 w-6 bg-blue-200 rounded-full flex items-center justify-center mr-2">
+              <span class="text-blue-700 font-medium">2</span>
+            </div>
+            <p>Hold the device steady until the code is recognized</p>
+          </div>
+          <div class="flex items-center">
+            <div class="flex-shrink-0 h-6 w-6 bg-blue-200 rounded-full flex items-center justify-center mr-2">
+              <span class="text-blue-700 font-medium">3</span>
+            </div>
+            <p>Wait for confirmation that attendance was recorded</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Recent Scans Section -->
+  <div class="mt-6 md:mt-8 bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-gray-100">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+      <i class="fas fa-history text-orange-500 mr-2"></i> Recent Scans
+    </h2>
+    <div id="recent-scans" class="space-y-3">
+      <div class="text-sm text-gray-500 italic text-center py-4">
+        No recent scans to display
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QR Code Scanner Script -->
+<script src="https://unpkg.com/html5-qrcode@2.0.9/dist/html5-qrcode.min.js"></script>
+<script>
+  // Function to handle successful QR code scan
+  function onScanSuccess(decodedText, decodedResult) {
+    console.log(`Code scanned: ${decodedText}`, decodedResult);
+    
+    // Display a loading message while fetching data
+    document.getElementById('loading').classList.remove('hidden');
+    
+    // Make a fetch request to the backend with the scanned data
+    fetch(decodedText)
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('loading').classList.add('hidden'); // Hide loading
+        
+        // Add to recent scans
+        addToRecentScans(data.success ? 'success' : 'error', data.message);
+        
+        if (data.success) {
+          // Show success message with SweetAlert2
+          Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: data.message,
+            confirmButtonColor: '#f97316',
+            showClass: {
+              popup: 'animate__animated animate__fadeInDown'
+            },
+            hideClass: {
+              popup: 'animate__animated animate__fadeOutUp'
+            }
+          });
+        } else {
+          // Show error message with SweetAlert2
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: data.message,
+            confirmButtonColor: '#f97316',
+            showClass: {
+              popup: 'animate__animated animate__fadeInDown'
+            },
+            hideClass: {
+              popup: 'animate__animated animate__fadeOutUp'
+            }
+          });
+        }
+      })
+      .catch(error => {
+        document.getElementById('loading').classList.add('hidden'); // Hide loading
+        console.error('Error:', error);
+        
+        // Add to recent scans
+        addToRecentScans('error', 'Network error. Please try again.');
+        
+        // Show error message with SweetAlert2
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Network error. Please try again.',
+          confirmButtonColor: '#f97316',
+          showClass: {
+            popup: 'animate__animated animate__fadeInDown'
+          },
+          hideClass: {
+            popup: 'animate__animated animate__fadeOutUp'
+          }
+        });
+      });
+  }
+
+  // Function to handle QR code scan failure
+  function onScanFailure(error) {
+    console.warn(`QR Code scan failed: ${error}`);
+  }
+  
+  // Function to add scan to recent scans list
+  function addToRecentScans(type, message) {
+    const recentScans = document.getElementById('recent-scans');
+    
+    // Clear "no scans" message if it exists
+    if (recentScans.querySelector('.italic')) {
+      recentScans.innerHTML = '';
+    }
+    
+    // Create new scan entry
+    const scanEntry = document.createElement('div');
+    scanEntry.className = 'flex items-center p-3 border rounded-lg ' + 
+      (type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50');
+    
+    const icon = document.createElement('div');
+    icon.className = 'flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ' + 
+      (type === 'success' ? 'bg-green-100' : 'bg-red-100');
+    icon.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check' : 'times') + ' ' + 
+      (type === 'success' ? 'text-green-600' : 'text-red-600') + '"></i>';
+    
+    const content = document.createElement('div');
+    content.className = 'ml-3';
+    content.innerHTML = '<p class="text-sm font-medium ' + 
+      (type === 'success' ? 'text-green-800' : 'text-red-800') + '">' + message + '</p>' +
+      '<p class="text-xs ' + (type === 'success' ? 'text-green-700' : 'text-red-700') + ' mt-1">' + 
+      new Date().toLocaleTimeString() + '</p>';
+    
+    scanEntry.appendChild(icon);
+    scanEntry.appendChild(content);
+    
+    // Add to the top of the list
+    recentScans.insertBefore(scanEntry, recentScans.firstChild);
+    
+    // Limit to 5 recent scans
+    if (recentScans.children.length > 5) {
+      recentScans.removeChild(recentScans.lastChild);
+    }
+    
+    // Add animation
+    scanEntry.style.opacity = '0';
+    scanEntry.style.transform = 'translateY(-10px)';
+    scanEntry.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    
+    setTimeout(() => {
+      scanEntry.style.opacity = '1';
+      scanEntry.style.transform = 'translateY(0)';
+    }, 10);
+  }
+
+  // Initialize and render the QR code scanner
+  document.addEventListener('DOMContentLoaded', function() {
+    var html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", {
+      fps: 10, // Set frames per second
+      qrbox: 250, // Set the size of the scanning box
+      aspectRatio: 1, // Adjust for better performance on mobile
+      disableFlip: false, // Allow flip of camera if needed
+    });
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    
+    // Add animation to elements
+    const elements = document.querySelectorAll('.rounded-2xl, .rounded-xl');
+    elements.forEach((element, index) => {
+      element.style.opacity = '0';
+      element.style.transform = 'translateY(20px)';
+      element.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      
+      setTimeout(() => {
+        element.style.opacity = '1';
+        element.style.transform = 'translateY(0)';
+      }, 100 + (index * 50));
+    });
+    
+    // Add style for the "Start Scanning" button that appears after permissions
+    const styleTag = document.createElement('style');
+    styleTag.textContent = `
+      /* Style for the "Start Scanning" button */
+      button[data-tooltip="Start Scanning"] {
+        background: linear-gradient(to right, #f97316, #ea580c) !important;
+        color: white !important;
+        font-weight: 500 !important;
+        padding: 12px 24px !important;
+        border-radius: 8px !important;
+        border: none !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+        transition: all 0.3s ease !important;
+        position: relative !important;
+        overflow: hidden !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 16px auto !important;
+        cursor: pointer !important;
+      }
+      
+      /* Hover effect */
+      button[data-tooltip="Start Scanning"]:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+      }
+      
+      /* Add camera icon before text */
+      button[data-tooltip="Start Scanning"]::before {
+        content: "\\f030"; /* Camera icon Unicode */
+        font-family: "Font Awesome 5 Free";
+        font-weight: 900;
+        margin-right: 8px;
+      }
+      
+      /* Pulse animation */
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 0;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+      
+      button[data-tooltip="Start Scanning"]::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-color: white;
+        opacity: 0;
+        border-radius: 8px;
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+    `;
+    document.head.appendChild(styleTag);
+    
+    // MutationObserver to detect when the "Start Scanning" button appears
+    const observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.type === 'childList') {
+          const startButton = document.querySelector('button[data-tooltip="Start Scanning"]');
+          if (startButton) {
+            // Add Font Awesome if not already loaded
+            if (!document.querySelector('link[href*="font-awesome"]')) {
+              const fontAwesome = document.createElement('link');
+              fontAwesome.rel = 'stylesheet';
+              fontAwesome.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css';
+              document.head.appendChild(fontAwesome);
+            }
+          }
+        }
+      });
+    });
+    
+    // Start observing the document with the configured parameters
+    observer.observe(document.body, { childList: true, subtree: true });
+  });
+</script>
+
+<!-- SweetAlert2 for better alerts -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Animate.css for alert animations -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+<!-- Font Awesome for icons -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+{% endblock %}

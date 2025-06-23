@@ -1,0 +1,180 @@
+{% extends 'members/base2.html' %}
+{% block title %}Visitor List{% endblock %}
+{% block content %}
+
+<div class="w-full max-w-7xl mx-auto px-4 my-10">
+  <!-- Header with decorative elements -->
+  <div class="relative mb-6 md:mb-8 text-center">
+    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+      Visitor List
+    </h1>
+    <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-1.5 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
+    <p class="text-gray-500 mt-2 text-sm md:text-base">Manage and follow up with church visitors</p>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-gray-100">
+    <!-- Search Bar -->
+    <div class="mb-6">
+      <div class="relative w-full md:w-64 lg:w-80">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+          <i class="fas fa-search"></i>
+        </span>
+        <input 
+          type="text" 
+          id="search" 
+          class="w-full pl-10 pr-4 py-2.5 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" 
+          placeholder="Search visitors..." 
+          onkeyup="searchVisitors()"
+        >
+      </div>
+    </div>
+    
+    <!-- Table Instructions for Mobile -->
+    <div class="md:hidden mb-4 bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
+      <p><i class="fas fa-info-circle mr-1"></i> Swipe horizontally to view all visitor details</p>
+    </div>
+    
+    <!-- Responsive Table with Horizontal Scroll on Mobile -->
+    <div class="overflow-x-auto rounded-lg border border-gray-200">
+      <table id="visitor-table" class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">First Name</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Name</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone Number</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visit Date</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Follow Up Status</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for visitor in visitors %}
+          <tr class="hover:bg-gray-50 transition-colors duration-200">
+            <td class="px-4 py-3 whitespace-nowrap font-medium text-gray-800">{{ visitor.first_name }}</td>
+            <td class="px-4 py-3 whitespace-nowrap font-medium text-gray-800">{{ visitor.last_name }}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ visitor.email }}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ visitor.phone_number }}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ visitor.visit_date }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span class="px-2 py-1 text-xs font-medium rounded-full 
+                {% if visitor.follow_up_status == 'Pending' %}
+                  bg-yellow-100 text-yellow-800
+                {% elif visitor.follow_up_status == 'Completed' %}
+                  bg-green-100 text-green-800
+                {% else %}
+                  bg-gray-100 text-gray-800
+                {% endif %}">
+                {{ visitor.follow_up_status }}
+              </span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <a href="{% url 'follow_up_visitor' visitor.pk %}" 
+                 class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors duration-300">
+                <i class="fas fa-user-check mr-1.5"></i> Follow Up
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+              <div class="flex flex-col items-center">
+                <i class="fas fa-user-friends text-4xl mb-3 text-gray-300"></i>
+                <p class="text-lg font-medium">No visitors found</p>
+                <p class="text-sm mt-1">Add new visitors using the "Add Visitor" option</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- Quick Stats Cards -->
+  <div class="mt-6 md:mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+    <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-blue-500 hover:shadow-lg transition-shadow">
+      <div class="flex items-center">
+        <div class="p-3 bg-blue-100 rounded-lg">
+          <i class="fas fa-user-friends text-blue-600 text-xl"></i>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-500">Total Visitors</p>
+          <h3 class="text-2xl font-bold text-gray-800">{{ visitors.count }}</h3>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-yellow-500 hover:shadow-lg transition-shadow">
+      <div class="flex items-center">
+        <div class="p-3 bg-yellow-100 rounded-lg">
+          <i class="fas fa-clock text-yellow-600 text-xl"></i>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-500">Pending Follow-ups</p>
+          <h3 class="text-2xl font-bold text-gray-800">{{ pending_count|default:"0" }}</h3>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-green-500 hover:shadow-lg transition-shadow">
+      <div class="flex items-center">
+        <div class="p-3 bg-green-100 rounded-lg">
+          <i class="fas fa-check-circle text-green-600 text-xl"></i>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-500">Completed Follow-ups</p>
+          <h3 class="text-2xl font-bold text-gray-800">{{ completed_count|default:"0" }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Search functionality
+  function searchVisitors() {
+    const input = document.getElementById('search');
+    const filter = input.value.toUpperCase();
+    const table = document.getElementById('visitor-table');
+    const rows = table.getElementsByTagName('tr');
+    
+    for (let i = 1; i < rows.length; i++) {
+      let found = false;
+      const cells = rows[i].getElementsByTagName('td');
+      
+      for (let j = 0; j < cells.length; j++) {
+        const cell = cells[j];
+        if (cell) {
+          const textValue = cell.textContent || cell.innerText;
+          if (textValue.toUpperCase().indexOf(filter) > -1) {
+            found = true;
+            break;
+          }
+        }
+      }
+      
+      if (found) {
+        rows[i].style.display = '';
+      } else {
+        rows[i].style.display = 'none';
+      }
+    }
+  }
+  
+  // Add animation to table rows
+  document.addEventListener('DOMContentLoaded', function() {
+    const tableRows = document.querySelectorAll('#visitor-table tbody tr');
+    tableRows.forEach((row, index) => {
+      row.style.opacity = '0';
+      row.style.transform = 'translateY(10px)';
+      row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      
+      setTimeout(() => {
+        row.style.opacity = '1';
+        row.style.transform = 'translateY(0)';
+      }, 50 + (index * 30));
+    });
+  });
+</script>
+{% endblock %}

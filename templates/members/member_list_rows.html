@@ -1,0 +1,60 @@
+<!-- members/templates/members/member_list_rows.html -->
+{% for member in members %}
+<tr class="hover:bg-gray-50 transition-colors duration-200">
+    <td class="px-4 py-3 whitespace-nowrap">
+        {% if member.picture %}
+        <img src="{{ member.picture.url }}" alt="{{ member.first_name }}" class="h-10 w-10 rounded-full object-cover border border-gray-200"> 
+        {% else %}
+        <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+            <i class="fas fa-user"></i>
+        </div>
+        {% endif %}
+    </td>
+    <td class="px-4 py-3 whitespace-nowrap font-medium text-gray-800">{{ member.first_name }}</td>
+    <td class="px-4 py-3 whitespace-nowrap font-medium text-gray-800">{{ member.last_name }}</td>
+    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.email }}</td>
+    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.phone_number }}</td>
+    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.program_of_study }}</td>
+    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.level_of_study }}</td>
+    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.gender }}</td>
+    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.address }}</td>
+    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.date_of_birth }}</td>
+    <td class="px-4 py-3 whitespace-nowrap">
+        <span class="px-2 py-1 text-xs font-medium rounded-full 
+            {% if member.get_status_display == 'Active' %}
+                bg-green-100 text-green-800
+            {% elif member.get_status_display == 'Inactive' %}
+                bg-red-100 text-red-800
+            {% else %}
+                bg-yellow-100 text-yellow-800
+            {% endif %}">
+            {{ member.get_status_display }}
+        </span>
+    </td>
+    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.membership_class }}</td>
+    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.guardian_name }}</td>
+    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.guardian_phone_number }}</td>
+    <td class="px-4 py-3 whitespace-nowrap">
+        <div class="flex space-x-2">
+            <a href="{% url 'edit_member' member.pk %}" class="text-blue-600 hover:text-blue-800 transition-colors p-1.5 hover:bg-blue-100 rounded-full">
+                <i class="fas fa-edit"></i>
+            </a>
+            <a href="{% url 'delete_member' member.pk %}" 
+               onclick="return confirm('Are you sure you want to delete this member?');" 
+               class="text-red-600 hover:text-red-800 transition-colors p-1.5 hover:bg-red-100 rounded-full">
+                <i class="fas fa-trash-alt"></i>
+            </a>
+        </div>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="15" class="px-4 py-8 text-center text-gray-500">
+        <div class="flex flex-col items-center">
+            <i class="fas fa-users text-4xl mb-3 text-gray-300"></i>
+            <p class="text-lg font-medium">No members found</p>
+            <p class="text-sm mt-1">Try adjusting your search or add new members</p>
+        </div>
+    </td>
+</tr>
+{% endfor %}

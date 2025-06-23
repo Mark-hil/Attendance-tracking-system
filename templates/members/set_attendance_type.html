@@ -1,0 +1,173 @@
+{% extends 'members/base2.html' %}
+{% load widget_tweaks %}
+{% block title %}Set Attendance Type{% endblock %}
+{% block content %}
+
+<div class="w-full max-w-6xl mx-auto px-4 my-10">
+  <div class="bg-white rounded-2xl shadow-xl p-4 md:p-6 transition-all duration-300 hover:shadow-2xl border border-gray-100">
+    <!-- Header with decorative elements -->
+    <div class="relative mb-8 md:mb-10 text-center">
+      <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+        Set Attendance Session
+      </h1>
+      <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-1.5 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
+      <p class="text-gray-500 mt-2 text-sm md:text-base">Configure the type of attendance you want to track</p>
+    </div>
+
+    <!-- Form with enhanced styling -->
+    <form method="POST" class="space-y-6 md:space-y-8" novalidate>
+      {% csrf_token %}
+      
+      <!-- Attendance Type Field -->
+      <div class="space-y-2">
+        <label for="{{ form.attendance_type.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+          Attendance Type <span class="text-orange-500">*</span>
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+            <i class="fas fa-clipboard-check"></i>
+          </span>
+          {{ form.attendance_type|add_class:"w-full pl-10 pr-4 py-3 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" }}
+        </div>
+      </div>
+
+      <!-- Event Details Field (Hidden by default) -->
+      <div id="event_details" class="space-y-2 hidden">
+        <label for="{{ form.event_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+          Event Name <span class="text-orange-500">*</span>
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+            <i class="fas fa-calendar-day"></i>
+          </span>
+          {{ form.event_name|add_class:"w-full pl-10 pr-4 py-3 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" }}
+        </div>
+      </div>
+
+      <!-- Group Details Field (Hidden by default) -->
+      <div id="group_details" class="space-y-2 hidden">
+        <label for="{{ form.group_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+          Group Name <span class="text-orange-500">*</span>
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+            <i class="fas fa-users"></i>
+          </span>
+          {{ form.group_name|add_class:"w-full pl-10 pr-4 py-3 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" }}
+        </div>
+      </div>
+
+      <!-- Form Actions with Enhanced Button -->
+      <div class="flex justify-center mt-8 md:mt-10 pt-6 border-t border-gray-100">
+        <button
+          type="submit"
+          class="px-6 md:px-8 py-3 md:py-3.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium rounded-lg shadow-md hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transform transition-all duration-300 hover:scale-[1.02] flex items-center justify-center"
+        >
+          <i class="fas fa-play-circle mr-2"></i> Start Attendance Session
+        </button>
+      </div>
+    </form>
+  </div>
+  
+  <!-- Help Cards -->
+  <div class="mt-6 md:mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+    <!-- Working Hours Card -->
+    <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 shadow-sm">
+      <div class="flex items-start">
+        <div class="flex-shrink-0 p-2 bg-blue-100 rounded-full">
+          <i class="fas fa-clock text-blue-600 text-sm md:text-base"></i>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-xs md:text-sm font-medium text-blue-800">Working Hours</h3>
+          <p class="mt-1 text-xs text-blue-700">Track employee working hours and attendance</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Event Card -->
+    <div class="bg-purple-50 border border-purple-100 rounded-xl p-4 shadow-sm">
+      <div class="flex items-start">
+        <div class="flex-shrink-0 p-2 bg-purple-100 rounded-full">
+          <i class="fas fa-calendar-day text-purple-600 text-sm md:text-base"></i>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-xs md:text-sm font-medium text-purple-800">Special Events</h3>
+          <p class="mt-1 text-xs text-purple-700">Track attendance for conferences, retreats, etc.</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Small Group Card -->
+    <div class="bg-green-50 border border-green-100 rounded-xl p-4 shadow-sm">
+      <div class="flex items-start">
+        <div class="flex-shrink-0 p-2 bg-green-100 rounded-full">
+          <i class="fas fa-users text-green-600 text-sm md:text-base"></i>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-xs md:text-sm font-medium text-green-800">Small Groups</h3>
+          <p class="mt-1 text-xs text-green-700">Track attendance for Bible studies, prayer groups, etc.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const attendanceTypeField = document.getElementById('{{ form.attendance_type.id_for_label }}');
+    const eventDetails = document.getElementById('event_details');
+    const groupDetails = document.getElementById('group_details');
+
+    function updateFieldVisibility() {
+      const attendanceType = attendanceTypeField.value;
+      
+      // Animate the transitions
+      if (attendanceType === 'event') {
+        eventDetails.classList.remove('hidden');
+        eventDetails.style.opacity = '0';
+        eventDetails.style.transform = 'translateY(10px)';
+        setTimeout(() => {
+          eventDetails.style.opacity = '1';
+          eventDetails.style.transform = 'translateY(0)';
+        }, 50);
+        groupDetails.classList.add('hidden');
+      } else if (attendanceType === 'small_group') {
+        groupDetails.classList.remove('hidden');
+        groupDetails.style.opacity = '0';
+        groupDetails.style.transform = 'translateY(10px)';
+        setTimeout(() => {
+          groupDetails.style.opacity = '1';
+          groupDetails.style.transform = 'translateY(0)';
+        }, 50);
+        eventDetails.classList.add('hidden');
+      } else {
+        eventDetails.classList.add('hidden');
+        groupDetails.classList.add('hidden');
+      }
+    }
+
+    // Set initial visibility based on the selected attendance type (if any)
+    updateFieldVisibility();
+
+    // Add event listener to handle change in the attendance type selection
+    attendanceTypeField.addEventListener('change', updateFieldVisibility);
+    
+    // Add transition styles
+    eventDetails.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    groupDetails.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    
+    // Add animation to form fields
+    const formFields = document.querySelectorAll('select, input');
+    formFields.forEach((field, index) => {
+      field.style.opacity = '0';
+      field.style.transform = 'translateY(20px)';
+      field.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      
+      setTimeout(() => {
+        field.style.opacity = '1';
+        field.style.transform = 'translateY(0)';
+      }, 100 + (index * 50));
+    });
+  });
+</script>
+{% endblock %}

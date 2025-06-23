@@ -1,0 +1,283 @@
+{% extends 'members/base2.html' %}
+{% block title %}Attendance Report{% endblock %}
+{% block content %}
+{% load static %}
+
+<div class="w-full max-w-6xl mx-auto px-4 my-10">
+  <!-- Header with decorative elements -->
+  <div class="relative mb-8 md:mb-10 text-center">
+    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+      Attendance Report
+    </h1>
+    <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-1.5 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
+    <p class="text-gray-500 mt-2 text-sm md:text-base">Track and analyze attendance statistics</p>
+  </div>
+
+  <!-- Filter Form Card -->
+  <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-6 md:mb-8 border border-gray-100">
+    <h2 class="text-base md:text-lg font-semibold text-gray-700 mb-4">Filter by Date Range</h2>
+    
+    <form method="GET" action="{% url 'attendance_report' %}" class="flex flex-col md:flex-row md:items-end gap-4">
+      <div class="space-y-2 flex-1">
+        <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+            <i class="fas fa-calendar-alt"></i>
+          </span>
+          <input 
+            type="date" 
+            id="start_date" 
+            name="start_date" 
+            value="{{ start_date }}" 
+            class="w-full pl-10 pr-4 py-2.5 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+          >
+        </div>
+      </div>
+      
+      <div class="space-y-2 flex-1">
+        <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+            <i class="fas fa-calendar-alt"></i>
+          </span>
+          <input 
+            type="date" 
+            id="end_date" 
+            name="end_date" 
+            value="{{ end_date }}" 
+            class="w-full pl-10 pr-4 py-2.5 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+          >
+        </div>
+      </div>
+      
+      <div class="flex gap-2 md:gap-3">
+        <button 
+          type="submit" 
+          class="flex-1 md:flex-none px-4 md:px-6 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium rounded-lg shadow-md hover:from-orange-600 hover:to-orange-700 transition-all duration-300 hover:shadow-lg flex items-center justify-center"
+        >
+          <i class="fas fa-filter mr-2"></i> Filter
+        </button>
+        
+        <button 
+          type="submit" 
+          name="reset" 
+          value="true" 
+          class="flex-1 md:flex-none px-4 md:px-6 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all duration-300 flex items-center justify-center"
+        >
+          <i class="fas fa-redo-alt mr-2"></i> Reset
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Attendance Stats Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+    <!-- Working Hours Card -->
+    <div class="bg-white rounded-xl shadow-md p-3 md:p-5 border-l-4 border-blue-500 hover:shadow-lg transition-shadow">
+      <div class="flex items-center">
+        <div class="p-2 md:p-3 bg-blue-100 rounded-lg">
+          <i class="fas fa-clock text-blue-600 text-base md:text-xl"></i>
+        </div>
+        <div class="ml-3 md:ml-4">
+          <p class="text-xs md:text-sm font-medium text-gray-500">Working Hours</p>
+          <h3 class="text-lg md:text-2xl font-bold text-gray-800">{{ worship_service_count }}</h3>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Event Card -->
+    <div class="bg-white rounded-xl shadow-md p-3 md:p-5 border-l-4 border-purple-500 hover:shadow-lg transition-shadow">
+      <div class="flex items-center">
+        <div class="p-2 md:p-3 bg-purple-100 rounded-lg">
+          <i class="fas fa-calendar-day text-purple-600 text-base md:text-xl"></i>
+        </div>
+        <div class="ml-3 md:ml-4">
+          <p class="text-xs md:text-sm font-medium text-gray-500">Events</p>
+          <h3 class="text-lg md:text-2xl font-bold text-gray-800">{{ event_attendance_count }}</h3>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Small Group Card -->
+    <div class="bg-white rounded-xl shadow-md p-3 md:p-5 border-l-4 border-green-500 hover:shadow-lg transition-shadow">
+      <div class="flex items-center">
+        <div class="p-2 md:p-3 bg-green-100 rounded-lg">
+          <i class="fas fa-users text-green-600 text-base md:text-xl"></i>
+        </div>
+        <div class="ml-3 md:ml-4">
+          <p class="text-xs md:text-sm font-medium text-gray-500">Small Groups</p>
+          <h3 class="text-lg md:text-2xl font-bold text-gray-800">{{ small_group_attendance_count }}</h3>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Visitors Card -->
+    <div class="bg-white rounded-xl shadow-md p-3 md:p-5 border-l-4 border-orange-500 hover:shadow-lg transition-shadow">
+      <div class="flex items-center">
+        <div class="p-2 md:p-3 bg-orange-100 rounded-lg">
+          <i class="fas fa-user-friends text-orange-600 text-base md:text-xl"></i>
+        </div>
+        <div class="ml-3 md:ml-4">
+          <p class="text-xs md:text-sm font-medium text-gray-500">Visitors</p>
+          <h3 class="text-lg md:text-2xl font-bold text-gray-800">{{ visitor_count }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Chart Card -->
+  <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-6 md:mb-8 border border-gray-100">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 md:mb-6">
+      <h2 class="text-base md:text-lg font-semibold text-gray-700">Attendance Overview</h2>
+      <a 
+        href="{% url 'export_attendance_report' %}" 
+        class="px-3 md:px-4 py-2 bg-green-600 text-white font-medium rounded-lg shadow-sm hover:bg-green-700 transition-colors duration-300 flex items-center text-sm"
+      >
+        <i class="fas fa-file-export mr-2"></i> Export to CSV
+      </a>
+    </div>
+    
+    <!-- Table Instructions for Mobile -->
+    <div class="md:hidden mb-4 bg-blue-50 p-3 rounded-lg text-xs text-blue-700">
+      <p><i class="fas fa-info-circle mr-1"></i> Swipe horizontally to view all attendance details</p>
+    </div>
+    
+    <!-- Attendance Table -->
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 rounded-lg overflow-hidden">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance Type</th>
+            <th class="px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
+            <th class="px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% with total=worship_service_count|add:event_attendance_count|add:small_group_attendance_count|add:visitor_count %}
+          {% if total > 0 %}
+          {% with worship_percent=worship_service_count|floatformat:0 event_percent=event_attendance_count|floatformat:0 small_percent=small_group_attendance_count|floatformat:0 visitor_percent=visitor_count|floatformat:0 %}
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 h-6 w-6 md:h-8 md:w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-clock text-blue-600 text-xs md:text-sm"></i>
+                </div>
+                <div class="ml-3">
+                  <p class="text-xs md:text-sm font-medium text-gray-900">Working Hours</p>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-700">{{ worship_service_count }}</td>
+            <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
+              <div class="w-full bg-gray-200 rounded-full h-2 md:h-2.5">
+                <div class="bg-blue-600 h-2 md:h-2.5 rounded-full" style="width: {{ worship_percent }}%"></div>
+              </div>
+              <span class="text-xs text-gray-500 mt-1 inline-block">
+                {{ worship_percent }}%
+              </span>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 h-6 w-6 md:h-8 md:w-8 bg-purple-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-calendar-day text-purple-600 text-xs md:text-sm"></i>
+                </div>
+                <div class="ml-3">
+                  <p class="text-xs md:text-sm font-medium text-gray-900">Events</p>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-700">{{ event_attendance_count }}</td>
+            <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
+              <div class="w-full bg-gray-200 rounded-full h-2 md:h-2.5">
+                <div class="bg-purple-600 h-2 md:h-2.5 rounded-full" style="width: {{ event_percent }}%"></div>
+              </div>
+              <span class="text-xs text-gray-500 mt-1 inline-block">
+                {{ event_percent }}%
+              </span>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 h-6 w-6 md:h-8 md:w-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-users text-green-600 text-xs md:text-sm"></i>
+                </div>
+                <div class="ml-3">
+                  <p class="text-xs md:text-sm font-medium text-gray-900">Small Groups</p>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-700">{{ small_group_attendance_count }}</td>
+            <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
+              <div class="w-full bg-gray-200 rounded-full h-2 md:h-2.5">
+                <div class="bg-green-600 h-2 md:h-2.5 rounded-full" style="width: {{ small_percent }}%"></div>
+              </div>
+              <span class="text-xs text-gray-500 mt-1 inline-block">
+                {{ small_percent }}%
+              </span>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 h-6 w-6 md:h-8 md:w-8 bg-orange-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-user-friends text-orange-600 text-xs md:text-sm"></i>
+                </div>
+                <div class="ml-3">
+                  <p class="text-xs md:text-sm font-medium text-gray-900">Visitors</p>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-700">{{ visitor_count }}</td>
+            <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
+              <div class="w-full bg-gray-200 rounded-full h-2 md:h-2.5">
+                <div class="bg-orange-600 h-2 md:h-2.5 rounded-full" style="width: {{ visitor_percent }}%"></div>
+              </div>
+              <span class="text-xs text-gray-500 mt-1 inline-block">
+                {{ visitor_percent }}%
+              </span>
+            </td>
+          </tr>
+          {% endwith %}
+          {% else %}
+          <tr>
+            <td colspan="3" class="px-4 md:px-6 py-6 md:py-8 text-center text-gray-500">
+              <div class="flex flex-col items-center">
+                <i class="fas fa-chart-bar text-3xl md:text-4xl mb-3 text-gray-300"></i>
+                <p class="text-base md:text-lg font-medium">No attendance data available</p>
+                <p class="text-xs md:text-sm mt-1">Try adjusting your date range or add new attendance records</p>
+              </div>
+            </td>
+          </tr>
+          {% endif %}
+          <tr class="bg-gray-50">
+            <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap font-medium text-xs md:text-sm">Total</td>
+            <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap font-medium text-xs md:text-sm">{{ total }}</td>
+            <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap font-medium text-xs md:text-sm">100%</td>
+          </tr>
+          {% endwith %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Add animation to cards
+  document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.rounded-xl');
+    cards.forEach((card, index) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      
+      setTimeout(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, 100 + (index * 50));
+    });
+  });
+</script>
+{% endblock %}

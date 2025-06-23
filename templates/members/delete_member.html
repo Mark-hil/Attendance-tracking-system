@@ -1,0 +1,10 @@
+<!-- members/templates/members/delete_member.html -->
+{% extends 'members/base.html' %} {% block title %}Delete Member{% endblock %} {% block content %}
+<h1>Delete Member: {{ member.first_name }} {{ member.last_name }}</h1>
+<p>Are you sure you want to delete this member?</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Yes, Delete</button>
+    <a href="{% url 'member_list' %}">Cancel</a>
+</form>
+{% endblock %}

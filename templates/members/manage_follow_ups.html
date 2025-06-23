@@ -1,0 +1,33 @@
+<!-- templates/manage_follow_ups.html -->
+{% extends 'base.html' %} {% block content %}
+<h1>Manage Follow-Ups</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Visitor</th>
+            <th>Follow-Up Type</th>
+            <th>Date</th>
+            <th>Notes</th>
+            <th>Completed</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for follow_up in follow_ups %}
+        <tr>
+            <td>{{ follow_up.visitor.first_name }} {{ follow_up.visitor.last_name }}</td>
+            <td>{{ follow_up.follow_up_type }}</td>
+            <td>{{ follow_up.follow_up_date }}</td>
+            <td>{{ follow_up.notes }}</td>
+            <td>
+                {% if not follow_up.completed %}
+                <form method="post" action="{% url 'complete_follow_up' follow_up.id %}">
+                    {% csrf_token %}
+                    <button type="submit">Mark as Completed</button>
+                </form>
+                {% else %} Completed {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

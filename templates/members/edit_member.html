@@ -1,0 +1,9 @@
+<!-- members/templates/members/edit_member.html -->
+{% extends 'members/base2.html' %} {% block title %}Edit Member{% endblock %} {% block content %}
+<h1>Edit Member: {{ member.first_name }} {{ member.last_name }}</h1>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %} {{ form.as_p }}
+    <button type="submit">Save Changes</button>
+</form>
+<p><a href="{% url 'member_list' %}">Back to Member List</a></p>
+{% endblock %}
