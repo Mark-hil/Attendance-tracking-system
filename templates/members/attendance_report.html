@@ -71,7 +71,7 @@
   </div>
 
   <!-- Attendance Stats Cards -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-8">
     <!-- Working Hours Card -->
     <div class="bg-white rounded-xl shadow-md p-3 md:p-5 border-l-4 border-blue-500 hover:shadow-lg transition-shadow">
       <div class="flex items-center">
@@ -94,19 +94,6 @@
         <div class="ml-3 md:ml-4">
           <p class="text-xs md:text-sm font-medium text-gray-500">Events</p>
           <h3 class="text-lg md:text-2xl font-bold text-gray-800">{{ event_attendance_count }}</h3>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Small Group Card -->
-    <div class="bg-white rounded-xl shadow-md p-3 md:p-5 border-l-4 border-green-500 hover:shadow-lg transition-shadow">
-      <div class="flex items-center">
-        <div class="p-2 md:p-3 bg-green-100 rounded-lg">
-          <i class="fas fa-users text-green-600 text-base md:text-xl"></i>
-        </div>
-        <div class="ml-3 md:ml-4">
-          <p class="text-xs md:text-sm font-medium text-gray-500">Small Groups</p>
-          <h3 class="text-lg md:text-2xl font-bold text-gray-800">{{ small_group_attendance_count }}</h3>
         </div>
       </div>
     </div>
@@ -153,9 +140,9 @@
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          {% with total=worship_service_count|add:event_attendance_count|add:small_group_attendance_count|add:visitor_count %}
+          {% with total=worship_service_count|add:event_attendance_count|add:visitor_count %}
           {% if total > 0 %}
-          {% with worship_percent=worship_service_count|floatformat:0 event_percent=event_attendance_count|floatformat:0 small_percent=small_group_attendance_count|floatformat:0 visitor_percent=visitor_count|floatformat:0 %}
+          {% with worship_percent=worship_service_count|floatformat:0 event_percent=event_attendance_count|floatformat:0 visitor_percent=visitor_count|floatformat:0 %}
           <tr class="hover:bg-gray-50 transition-colors">
             <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
               <div class="flex items-center">
@@ -198,7 +185,7 @@
               </span>
             </td>
           </tr>
-          <tr class="hover:bg-gray-50 transition-colors">
+          {% comment %} <tr class="hover:bg-gray-50 transition-colors">
             <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
               <div class="flex items-center">
                 <div class="flex-shrink-0 h-6 w-6 md:h-8 md:w-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -218,7 +205,7 @@
                 {{ small_percent }}%
               </span>
             </td>
-          </tr>
+          </tr> {% endcomment %}
           <tr class="hover:bg-gray-50 transition-colors">
             <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
               <div class="flex items-center">

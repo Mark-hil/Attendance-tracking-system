@@ -136,9 +136,9 @@ class MemberForm(forms.ModelForm):
             'guardian_phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Guardian Phone Number'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'gender': forms.Select(attrs={'class': 'form-select'}),
-            'program_of_study': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Program of Study'}),
-            'level_of_study': forms.Select(attrs={'class': 'form-select'}),
-            'membership_class': forms.Select(attrs={'class': 'form-select'}),
+            'specialization': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Specialization'}),
+            'level_of_profession': forms.Select(attrs={'class': 'form-select'}),
+            # 'membership_class': forms.Select(attrs={'class': 'form-select'}),
             'picture': forms.ClearableFileInput(attrs={'class': 'form-control-file'}),
         }
 
@@ -163,13 +163,13 @@ class AttendanceSettingForm(forms.ModelForm):
 class VisitorForm(forms.ModelForm):
     class Meta:
         model = Visitor
-        fields = ['first_name', 'last_name', 'email', 'phone_number', 'follow_up_status']
+        fields = ['first_name', 'last_name', 'email', 'phone_number']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
-            'follow_up_status': forms.TextInput(attrs={'class': 'form-control'}),
+            # 'follow_up_status': forms.TextInput(attrs={'class': 'form-control'}),
         }
 # Follow-up form for visitor follow-up
 class FollowUpForm(forms.ModelForm):

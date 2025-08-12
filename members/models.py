@@ -35,36 +35,36 @@ class Member(models.Model):
     STATUS_CHOICES = [
         ('active', 'Active'),
         ('inactive', 'Inactive'),
-        ('visitor', 'Visitor'),
+        # ('visitor', 'Visitor'),
     ]
     GENDER_CHOICES = [
         ('male', 'male'),
         ('female', 'female'),
     ]
     LEVEL_CHOICES = [
-        ('100', '100'),
-        ('200', '200'),
-        ('300', '300'),
-        ('400', '400'),
-        ('Alumi', 'Alumi'),
+        ('NSP', 'NSP'),
+        ('JA', 'JA'),
+        ('Associate', 'Associate'),
+        ('Expert', 'Expert'),
+        # ('Alumi', 'Alumi'),
     ]
-    MEMBERSHIP_CLASS = [
-        ('Milerites', 'Milerites'),
-        ('Missionaries', 'Missionaries'),
-        ('Patriachs', 'Patriachs'),
-        ('Disciples', 'Disciples'),
-        ('Soul Winners', 'Soul Winners'),
-        ('Reminats', 'Reminats'),
-        ('Pioneers', 'Pioneers'),
-        ('Adventurers', 'Adventurers'),
-        ('Baptismal', 'Baptismal'),
-    ]
+    # MEMBERSHIP_CLASS = [
+    #     ('Milerites', 'Milerites'),
+    #     ('Missionaries', 'Missionaries'),
+    #     ('Patriachs', 'Patriachs'),
+    #     ('Disciples', 'Disciples'),
+    #     ('Soul Winners', 'Soul Winners'),
+    #     ('Reminats', 'Reminats'),
+    #     ('Pioneers', 'Pioneers'),
+    #     ('Adventurers', 'Adventurers'),
+    #     ('Baptismal', 'Baptismal'),
+    # ]
 
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='active')
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='')
-    program_of_study = models.CharField(max_length=100)
-    level_of_study = models.CharField(max_length=100, choices=LEVEL_CHOICES, default='')
-    membership_class = models.CharField(max_length=20,  choices=MEMBERSHIP_CLASS, default='')
+    specialization = models.CharField(max_length=100)
+    level_of_profession = models.CharField(max_length=100, choices=LEVEL_CHOICES, default='')
+    # membership_class = models.CharField(max_length=20,  choices=MEMBERSHIP_CLASS, default='')
     qr_code = models.BinaryField(null=True, blank=True)
 
 # def generate_qr_code_for_attendance(member):
@@ -217,7 +217,7 @@ class AttendanceSetting(models.Model):
     ATTENDANCE_TYPES = [
         ('working_hours', 'Working Hours'),
         ('event', 'Event'),
-        ('small_group', 'Small Group'),
+        # ('small_group', 'Small Group'),
     ]
 
     attendance_type = models.CharField(max_length=20, choices=ATTENDANCE_TYPES)

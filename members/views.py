@@ -30,6 +30,9 @@ def scanner(request):
     return render(request, 'members/scanner.html')
 
 def member_list(request):
+    from django.utils import timezone
+    from datetime import timedelta
+    
     query = request.GET.get('q')
     if query:
         members = Member.objects.filter(
@@ -50,7 +53,22 @@ def member_list(request):
         html = render_to_string('members/member_list_rows.html', {'members': members}, request=request)
         return HttpResponse(html)
     
-    return render(request, 'members/member_list.html', {'members': members})
+    # Calculate statistics
+    total_members = Member.objects.count()
+    active_members = Member.objects.filter(status='active').count()
+    
+    # Get the first day of the current month
+    first_day_of_month = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    new_this_month = Member.objects.filter(date_joined__gte=first_day_of_month).count()
+    
+    context = {
+        'members': members,
+        'member_count': total_members,
+        'active_count': active_members,
+        'new_members': new_this_month,
+    }
+    
+    return render(request, 'members/member_list.html', context)
 
 
 # import qrcode
@@ -81,27 +99,39 @@ def add_member(request):
     if request.method == 'POST':
         form = MemberForm(request.POST, request.FILES)
         if form.is_valid():
-            member = form.save()
+            # First save the member to get an ID
+            member = form.save(commit=False)
+            member.save()  # This generates the ID
+            form.save_m2m()  # Save many-to-many relationships
+            
+            try:
+                # Now that we have an ID, generate the QR code
+                qr_data = f"http://{request.get_host()}/scan-attendance/?member_id={member.id}"
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=10,
+                    border=4,
+                )
+                qr.add_data(qr_data)
+                qr.make(fit=True)
 
-            # Generate QR code based on member's unique ID
-            qr_data = f"http://127.0.0.1:8000/scan-attendance/?member_id={member.id}"
-            qr = qrcode.QRCode(
-                version=1,
-                error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=10,
-                border=4,
-            )
-            qr.add_data(qr_data)
-            qr.make(fit=True)
-
-            # Save QR Code as binary data
-            img = qr.make_image(fill='black', back_color='white')
-            buffer = BytesIO()
-            img.save(buffer, format='PNG')
-            member.qr_code = buffer.getvalue()  # Store binary data in PostgreSQL
-            member.save()
-
-            return redirect('member_list')
+                # Save QR Code as binary data
+                img = qr.make_image(fill='black', back_color='white')
+                buffer = BytesIO()
+                img.save(buffer, format='PNG')
+                
+                # Update the member with the QR code
+                member.qr_code = buffer.getvalue()
+                member.save(update_fields=['qr_code'])  # Only update the QR code field
+                
+                return redirect('member_list')
+                
+            except Exception as e:
+                # If QR code generation fails, delete the member and show error
+                member.delete()
+                form.add_error(None, f'Error generating QR code: {str(e)}')
+                return render(request, 'members/add_member.html', {'form': form})
     else:
         form = MemberForm()
     return render(request, 'members/add_member.html', {'form': form})
@@ -207,8 +237,8 @@ def export_members_csv(request):
     response['Content-Disposition'] = 'attachment; filename=members.csv'
 
     writer = csv.writer(response)
-    writer.writerow(['First Name', 'Last Name', 'Email', 'Phone Number','Program Of Study',
-            'Level Of Study','Gender', 'Address', 'Date of Birth', 'Status', 'Membership Class',  'Guardian Name','Guardian phone_number'])
+    writer.writerow(['First Name', 'Last Name', 'Email', 'Phone Number','Specialization',
+            'Level Of Profession','Gender', 'Address', 'Date of Birth', 'Status', 'Membership Class',  'Guardian Name','Guardian phone_number'])
 
     members = Member.objects.all()  # Get all members, or filter as needed
     for member in members:
@@ -217,8 +247,8 @@ def export_members_csv(request):
             member.last_name,
             member.email,
             member.phone_number,
-            member.program_of_study,
-            member.level_of_study,
+            member.specialization,
+            member.level_of_profession,
             member.gender,
             member.address,
             member.date_of_birth,
@@ -633,20 +663,35 @@ def follow_up_visitor(request, pk):
     return render(request, 'visitors/follow_up_visitor.html', {'form': form})
 
 def dashboard(request):
+    from datetime import date, timedelta
+    import json
+    
     # Get the total members, attendance, and visitors for today
     total_members = Member.objects.count()
-    # total_attendance = AttendanceSetting.objects.filter(date=date.today()).count()
     worship_service_count = WorshipServiceAttendance.objects.filter(date=date.today()).count()
     event_attendance_count = EventAttendance.objects.filter(date=date.today()).count()
-    small_group_attendance_count = SmallGroupAttendance.objects.filter(date=date.today()).count()
     visitors_today = Visitor.objects.filter(visit_date=date.today()).count()
+    
+    # Generate trend data for the last 7 days
+    trend_dates = []
+    trend_data = []
+    
+    for i in range(6, -1, -1):
+        current_date = date.today() - timedelta(days=i)
+        total_attendance = (
+            WorshipServiceAttendance.objects.filter(date=current_date).count() +
+            EventAttendance.objects.filter(date=current_date).count()
+        )
+        trend_dates.append(current_date.strftime('%Y-%m-%d'))
+        trend_data.append(total_attendance)
 
     context = {
         'total_members': total_members,
         'worship_service_count': worship_service_count,
         'event_attendance_count': event_attendance_count,
-        'small_group_attendance_count': small_group_attendance_count,
         'visitors_today': visitors_today,
+        'trend_labels': json.dumps(trend_dates),
+        'trend_data': json.dumps(trend_data),
     }
 
     return render(request, 'members/dashboard.html', context)

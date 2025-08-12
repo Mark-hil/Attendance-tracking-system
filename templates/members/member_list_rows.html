@@ -14,8 +14,8 @@
     <td class="px-4 py-3 whitespace-nowrap font-medium text-gray-800">{{ member.last_name }}</td>
     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.email }}</td>
     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.phone_number }}</td>
-    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.program_of_study }}</td>
-    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.level_of_study }}</td>
+    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.specialization }}</td>
+    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.level_of_profession }}</td>
     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.gender }}</td>
     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.address }}</td>
     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.date_of_birth }}</td>
@@ -31,7 +31,7 @@
             {{ member.get_status_display }}
         </span>
     </td>
-    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.membership_class }}</td>
+    {% comment %} <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.membership_class }}</td> {% endcomment %}
     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.guardian_name }}</td>
     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ member.guardian_phone_number }}</td>
     <td class="px-4 py-3 whitespace-nowrap">
