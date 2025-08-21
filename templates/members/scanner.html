@@ -99,11 +99,17 @@
   function onScanSuccess(decodedText, decodedResult) {
     console.log(`Code scanned: ${decodedText}`, decodedResult);
     
-    // Extract member ID from the decoded text (URL)
-    const url = new URL(decodedText);
-    const memberId = url.searchParams.get('member_id');
-    
-    if (!memberId) {
+    // Extract parameters from the decoded text (URL)
+    let memberId, token;
+    try {
+      const url = new URL(decodedText);
+      memberId = url.searchParams.get('member_id');
+      token = url.searchParams.get('token');
+      
+      if (!memberId || !token) {
+        throw new Error('Missing required parameters');
+      }
+    } catch (error) {
       addToRecentScans('error', 'Invalid QR code format');
       Swal.fire({
         icon: 'error',
@@ -117,8 +123,8 @@
     // Display a loading message while fetching data
     document.getElementById('loading').classList.remove('hidden');
     
-    // Make a fetch request to the mark_attendance endpoint
-    fetch(`/mark-attendance/?member_id=${memberId}`, {
+    // Make a fetch request to the mark_attendance endpoint with both member_id and token
+    fetch(`/mark-attendance/?member_id=${memberId}&token=${encodeURIComponent(token)}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
