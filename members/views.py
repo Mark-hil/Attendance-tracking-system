@@ -5,16 +5,17 @@ from .models import AttendanceSetting, Member, generate_qr_code_for_attendance
 # from django.shortcuts import render
 from .forms import FollowUpForm, MemberForm, MemberEditForm
 
-# def member_list(request):
-#     members = Member.objects.all()
-#     return render(request, 'members/member_list.html', {'members': members})
-
-# members/views.py
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from .models import Member
 import csv
 import json
+
+from PIL import Image
+import io
+import logging
+from django.conf import settings
+import os
 
 import qrcode
 from io import BytesIO
@@ -23,8 +24,13 @@ from .models import Member,  Visitor
 from datetime import date
 from django.db.models import Count
 
-# from .models import WorshipServiceAttendance, EventAttendance, SmallGroupAttendance
-# from .forms import AttendanceForm  # Assume you have a form for attendance
+from .models import AttendanceSetting, Member, WorshipServiceAttendance, EventAttendance, SmallGroupAttendance
+from django.http import JsonResponse
+from django.utils import timezone
+from django.shortcuts import render, redirect, get_object_or_404
+
+from .models import AttendanceSetting
+from .forms import AttendanceSettingForm
 
 def scanner(request):
     return render(request, 'members/scanner.html')
@@ -135,82 +141,6 @@ def add_member(request):
     else:
         form = MemberForm()
     return render(request, 'members/add_member.html', {'form': form})
-# def add_member(request):
-#     if request.method == 'POST':
-#         form = MemberForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             member = form.save()
-
-#             # Generate QR code
-#             qr_code_file = generate_qr_code_for_attendance(member)
-#             member.qr_code.save('member_qrcode.png', qr_code_file)
-#             member.save()
-
-#             return redirect('member_list')
-#     else:
-#         form = MemberForm()
-#     return render(request, 'members/add_member.html', {'form': form})
-
-
-# members/views.py
-# from django.shortcuts import render
-# # from .models import WorshipServiceAttendance, EventAttendance, SmallGroupAttendance
-
-# def attendance_report(request):
-#     # Calculate the number of attendees for different categories
-#     worship_attendees = WorshipServiceAttendance.objects.count()
-#     event_attendees = EventAttendance.objects.count()
-#     small_group_attendees = SmallGroupAttendance.objects.count()
-
-#     context = {
-#         'worship_attendees': worship_attendees,
-#         'event_attendees': event_attendees,
-#         'small_group_attendees': small_group_attendees,
-#     }
-
-#     return render(request, 'members/attendance_report.html', context)
-
-# def add_member(request):
-#     if request.method == 'POST':
-#         form = MemberForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             member = form.save()
-            
-#              # Generate QR code with all member data except the image
-#             qr_data = (
-#                 f"First Name: {member.first_name}\n"
-#                 f"Last Name: {member.last_name}\n"
-#                 f"Email: {member.email}\n"
-#                 f"Phone Number: {member.phone_number}\n"
-#                 f"Address: {member.address}\n"
-#                 f"Date of Birth: {member.date_of_birth}\n"
-#                 f"Status: {member.get_status_display()}\n"
-#                 f"Membership Class: {member.membership_class}"
-#             )
-            
-#             qr = qrcode.QRCode(
-#                 version=1, 
-#                 error_correction=qrcode.constants.ERROR_CORRECT_L,
-#                 box_size=10, 
-#                 border=4
-#                 )
-#             qr.add_data(qr_data)
-#             qr.make(fit=True)
-            
-#             img = qr.make_image(fill='black', back_color='white')
-#             buffer = BytesIO()
-#             img.save(buffer, format='PNG')
-#             qr_code_file = ContentFile(buffer.getvalue(), 'qrcode.png')
-            
-#             # Save QR code to the member instance
-#             member.qr_code.save('qrcode.png', qr_code_file)
-#             member.save()
-            
-#             return redirect('member_list')
-#     else:
-#         form = MemberForm()
-#     return render(request, 'members/add_member.html', {'form': form})
-
 
 def edit_member(request, pk):
     member = get_object_or_404(Member, pk=pk)
@@ -261,11 +191,6 @@ def export_members_csv(request):
     return response
 
 
-# # members/views.py
-# from django.shortcuts import get_object_or_404
-# from django.http import HttpResponse
-# from .models import Member, WorshipServiceAttendance, EventAttendance, SmallGroupAttendance
-
 def track_attendance(request):
 #     qr_code_data = request.GET.get('data')
 #     if qr_code_data:
@@ -286,31 +211,7 @@ def track_attendance(request):
   return HttpResponse('Invalid QR code data.')
 
 
-from django.shortcuts import render, redirect, get_object_or_404
-# from .models import Member, WorshipService, Event, Attendance
 
-# def scan_attendance(request):
-#     # This view would be called when a QR code is scanned.
-#     member_id = request.GET.get('member_id')
-#     attendance_type = request.GET.get('type')
-#     worship_service_id = request.GET.get('service_id')
-#     event_id = request.GET.get('event_id')
-    
-#     member = get_object_or_404(Member, id=member_id)
-    
-#     if attendance_type == 'Worship Service':
-#         worship_service = get_object_or_404(WorshipService, id=worship_service_id)
-#         Attendance.objects.create(member=member, attendance_type='Worship Service', worship_service=worship_service)
-#     elif attendance_type == 'Event':
-#         event = get_object_or_404(Event, id=event_id)
-#         Attendance.objects.create(member=member, attendance_type='Event', event=event)
-    
-#     return redirect('attendance_success')
-
-# def attendance_success(request):
-#     return render(request, 'members/attendance_success.html')
-
-# from .models import Attendance
 
 def attendance_report(request):
     # Fetch all attendance records
@@ -327,64 +228,106 @@ def attendance_report(request):
     return render(request, 'members/attendance_report.html', context)
 
 
-from .models import AttendanceSetting, Member, WorshipServiceAttendance, EventAttendance, SmallGroupAttendance
-from django.http import JsonResponse
-from django.utils import timezone
 
-# def mark_attendance(request):
-#     member_id = request.GET.get('member_id')
-#     active_setting = AttendanceSetting.objects.filter(is_active=True).first()
 
-#     if not active_setting:
-#         return JsonResponse({'success': False, 'message': 'No active attendance session found.'})
-
-#     if member_id:
-#         member = get_object_or_404(Member, id=member_id)
-
-#         # Mark attendance based on the active setting
-#         if active_setting.attendance_type == 'worship_service':
-#             WorshipServiceAttendance.objects.create(member=member)
-#         elif active_setting.attendance_type == 'event':
-#             EventAttendance.objects.create(member=member, event_name=active_setting.event_name)
-#         elif active_setting.attendance_type == 'small_group':
-#             SmallGroupAttendance.objects.create(member=member, group_name=active_setting.group_name)
-
-#         return JsonResponse({'success': True, 'message': 'Attendance recorded successfully!'})
-
-#     return JsonResponse({'success': False, 'message': 'Failed to record attendance. Please try again.'})
 
 def mark_attendance(request):
+    # Get member_id from request
     member_id = request.GET.get('member_id')
-    active_setting = AttendanceSetting.objects.filter(is_active=True).first()
-    today = timezone.now().date()  # Automatically get today's date
-
-    if not active_setting:
-        return JsonResponse({'success': False, 'message': 'No active attendance session found.'})
-
-    if member_id:
-        member = get_object_or_404(Member, id=member_id)
-
+    
+    # Validate member_id
+    if not member_id or member_id == 'None':
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid member ID provided'
+        }, status=400)
+    
+    try:
+        # Convert to integer and get member
+        member = get_object_or_404(Member, id=int(member_id))
+        
+        # Check if there's an active attendance setting
+        active_setting = AttendanceSetting.objects.filter(is_active=True).first()
+        if not active_setting:
+            return JsonResponse({
+                'success': False,
+                'message': 'No active attendance session found. Please set up an attendance type first.'
+            }, status=400)
+        
         # Check if attendance is already recorded for the member for today
+        today = timezone.now().date()
         attendance_exists = False
-        if active_setting.attendance_type == 'worship_service':
-            attendance_exists = WorshipServiceAttendance.objects.filter(member=member, date=today).exists()
+        
+        if active_setting.attendance_type == 'working_hours':
+            attendance_exists = WorshipServiceAttendance.objects.filter(
+                member=member, 
+                date=today
+            ).exists()
         elif active_setting.attendance_type == 'event':
-            attendance_exists = EventAttendance.objects.filter(member=member, setting=active_setting, date=today).exists()
+            attendance_exists = EventAttendance.objects.filter(
+                member=member, 
+                setting=active_setting, 
+                date=today
+            ).exists()
         elif active_setting.attendance_type == 'small_group':
-            attendance_exists = SmallGroupAttendance.objects.filter(member=member, setting=active_setting, date=today).exists()
+            attendance_exists = SmallGroupAttendance.objects.filter(
+                member=member, 
+                setting=active_setting, 
+                date=today
+            ).exists()
 
         if attendance_exists:
-            return JsonResponse({'success': False, 'message': 'Attendance has already been recorded for today.'})
+            return JsonResponse({
+                'success': False, 
+                'message': 'Attendance has already been recorded for today.'
+            })
 
         # Mark attendance if it doesn't already exist
-        if active_setting.attendance_type == 'worship_service':
-            WorshipServiceAttendance.objects.create(member=member, date=today)
+        if active_setting.attendance_type == 'working_hours':
+            WorshipServiceAttendance.objects.create(
+                member=member, 
+                date=today,
+                time=timezone.now().time()
+            )
+            attendance_type = 'Working Hours'
         elif active_setting.attendance_type == 'event':
-            EventAttendance.objects.create(member=member, setting=active_setting, date=today)  # Pass the setting
+            EventAttendance.objects.create(
+                member=member, 
+                setting=active_setting, 
+                date=today,
+                time=timezone.now().time(),
+                event_name=active_setting.event_name or 'General Event'
+            )
+            attendance_type = 'Event'
         elif active_setting.attendance_type == 'small_group':
-            SmallGroupAttendance.objects.create(member=member, setting=active_setting, date=today)  # Pass the setting
+            SmallGroupAttendance.objects.create(
+                member=member, 
+                setting=active_setting, 
+                date=today,
+                time=timezone.now().time(),
+                group_name=active_setting.group_name or 'General Group'
+            )
+            attendance_type = 'Small Group'
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid attendance type configured'
+            }, status=400)
 
-        return JsonResponse({'success': True, 'message': 'Attendance recorded successfully!'})
+        return JsonResponse({
+            'success': True, 
+            'message': f'{attendance_type} attendance recorded successfully!',
+            'member_name': f'{member.first_name} {member.last_name}',
+            'attendance_type': attendance_type,
+            'date': today.strftime('%Y-%m-%d'),
+            'time': timezone.now().strftime('%H:%M:%S')
+        })
+
+    except ValueError:
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid member ID format'
+        }, status=400)
 
     return JsonResponse({'success': False, 'message': 'Failed to record attendance. Please try again.'})
 
@@ -403,15 +346,46 @@ def attendance_report(request):
         try:
             start_date = timezone.datetime.strptime(start_date, '%Y-%m-%d').date()
             end_date = timezone.datetime.strptime(end_date, '%Y-%m-%d').date()
-        except ValueError:
+            # Ensure end_date is not before start_date
+            if end_date < start_date:
+                end_date = start_date
+        except (ValueError, TypeError):
             start_date = today
             end_date = today
 
     # Calculate counts for each attendance type within the date range
-    worship_service_count = WorshipServiceAttendance.objects.filter(date__range=[start_date, end_date]).count()
-    event_attendance_count = EventAttendance.objects.filter(date__range=[start_date, end_date]).count()
-    small_group_attendance_count = SmallGroupAttendance.objects.filter(date__range=[start_date, end_date]).count()
-    visitor_count = Visitor.objects.filter(visit_date__range=[start_date, end_date]).count()
+    # For working hours (WorshipServiceAttendance)
+    worship_service_count = WorshipServiceAttendance.objects.filter(
+        date__range=[start_date, end_date]
+    ).count()
+    
+    # For events (EventAttendance)
+    event_attendance_count = EventAttendance.objects.filter(
+        date__range=[start_date, end_date]
+    ).count()
+    
+    # For small groups (SmallGroupAttendance)
+    small_group_attendance_count = SmallGroupAttendance.objects.filter(
+        date__range=[start_date, end_date]
+    ).count()
+    
+    # For visitors
+    visitor_count = Visitor.objects.filter(
+        visit_date__range=[start_date, end_date]
+    ).count()
+    
+    # Get unique member counts for each attendance type
+    unique_members_working = Member.objects.filter(
+        worshipserviceattendance__date__range=[start_date, end_date]
+    ).distinct().count()
+    
+    unique_members_events = Member.objects.filter(
+        eventattendance__date__range=[start_date, end_date]
+    ).distinct().count()
+    
+    unique_members_groups = Member.objects.filter(
+        smallgroupattendance__date__range=[start_date, end_date]
+    ).distinct().count()
 
     # Pass the totals to the template
     context = {
@@ -419,8 +393,12 @@ def attendance_report(request):
         'event_attendance_count': event_attendance_count,
         'small_group_attendance_count': small_group_attendance_count,
         'visitor_count': visitor_count,
+        'unique_members_working': unique_members_working,
+        'unique_members_events': unique_members_events,
+        'unique_members_groups': unique_members_groups,
         'start_date': start_date,
         'end_date': end_date,
+        'today': today,
     }
 
     return render(request, 'members/attendance_report.html', context)
@@ -469,29 +447,7 @@ def export_attendance_report(request):
 
     return response
 
-# def set_attendance_session(request):
-#     if request.method == 'POST':
-#         # Deactivate any previously active session
-#         AttendanceSetting.objects.update(is_active=False)
 
-#         # Create a new active session based on admin input
-#         attendance_type = request.POST.get('attendance_type')
-#         event_name = request.POST.get('event_name', None)
-#         group_name = request.POST.get('group_name', None)
-
-#         AttendanceSetting.objects.create(
-#             attendance_type=attendance_type,
-#             event_name=event_name,
-#             group_name=group_name,
-#             is_active=True
-#         )
-
-#         return redirect('scanner')  # Redirect to the scanning page after setting the session
-
-#     return render(request, 'members/set_attendance_session.html')
-
-from .models import AttendanceSetting
-from .forms import AttendanceSettingForm
 
 def set_attendance_type(request):
     if request.method == 'POST':
@@ -514,11 +470,7 @@ def print_badges(request):
     members = Member.objects.all()
     return render(request, 'members/print_badges.html', {'members': members})
 
-from PIL import Image
-import io
-import logging
-from django.conf import settings
-import os
+
 
 def view_qr_code(request, member_id):
     """Retrieve and serve the QR code from PostgreSQL as an image."""
