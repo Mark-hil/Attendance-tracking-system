@@ -102,8 +102,27 @@ def generate_qr_code_for_attendance(member):
 
     if not active_setting:
         return HttpResponseForbidden("No active attendance setting found.")
-
-    qr_data = f"http://127.0.0.1:8000/scan-attendance/?member_id={member.id}&attendance_type={active_setting.attendance_type}"
+    
+    # Generate a unique token for this QR code
+    import uuid
+    from django.core.cache import cache
+    
+    # Create a token that's valid for the configured duration
+    token = str(uuid.uuid4())
+    cache_key = f'qr_token_{member.id}_{token}'
+    from django.conf import settings
+    from datetime import datetime
+    # Store token data with last_used date (no expiration)
+    token_data = {
+        'valid': True,
+        'last_used': None,  # Will be set on first use
+        'member_id': member.id  # Store member ID for cleanup
+    }
+    # Store without expiration (permanent until deleted)
+    cache.set(cache_key, token_data, timeout=None)
+    
+    # Include the token in the QR code URL
+    qr_data = f"http://127.0.0.1:8000/scan-attendance/?member_id={member.id}&attendance_type={active_setting.attendance_type}&token={token}"
     
     qr = qrcode.QRCode(
         version=1,

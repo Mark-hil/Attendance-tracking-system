@@ -31,6 +31,16 @@ DEBUG = config("DEBUG", cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS").split(",")
 CORS_ORIGIN_ALLOW_ALL = True 
 
+# Cache configuration - Using database backend for permanent storage
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'qr_code_cache',
+    }
+}
+
+# No expiration for QR codes - they'll be permanent until user is deleted
+
 # Application definition
 
 INSTALLED_APPS = [

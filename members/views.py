@@ -232,19 +232,57 @@ def attendance_report(request):
 
 
 def mark_attendance(request):
-    # Get member_id from request
+    # Get parameters from request
     member_id = request.GET.get('member_id')
+    token = request.GET.get('token')
     
-    # Validate member_id
-    if not member_id or member_id == 'None':
+    # Validate required parameters
+    if not all([member_id, token]):
         return JsonResponse({
             'success': False,
-            'message': 'Invalid member ID provided'
+            'message': 'Missing required parameters. Please scan the QR code again.'
         }, status=400)
     
+    # Validate member_id is a number
     try:
-        # Convert to integer and get member
-        member = get_object_or_404(Member, id=int(member_id))
+        member_id = int(member_id)
+    except (ValueError, TypeError):
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid member ID format.'
+        }, status=400)
+    
+    # Validate token exists and is valid
+    from django.core.cache import cache
+    from datetime import datetime, date
+    
+    cache_key = f'qr_token_{member_id}_{token}'
+    token_data = cache.get(cache_key, None)
+    
+    # Check if token exists and is valid
+    if not token_data or not token_data.get('valid', False):
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid or expired QR code. Please generate a new one.'
+        }, status=403)
+    
+    # Check if token was already used today
+    today = date.today()
+    last_used = token_data.get('last_used')
+    
+    if last_used and last_used.date() == today:
+        return JsonResponse({
+            'success': False,
+            'message': 'This QR code has already been used today. Please try again tomorrow.'
+        }, status=403)
+    
+    # Update the token with today's date (no expiration)
+    token_data['last_used'] = datetime.now()
+    cache.set(cache_key, token_data, timeout=None)  # Permanent storage
+    
+    try:
+        # Get the member
+        member = get_object_or_404(Member, id=member_id)
         
         # Check if there's an active attendance setting
         active_setting = AttendanceSetting.objects.filter(is_active=True).first()
@@ -482,14 +520,14 @@ def view_qr_code(request, member_id):
             import qrcode
             from io import BytesIO
 
-            qr_data = f"http://127.0.0.1:8000/scan-attendance/?member_id={member.id}"
+            # qr_data = f"http://127.0.0.1:8000/scan-attendance/?member_id={member.id}"
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
                 box_size=10,
                 border=4,
             )
-            qr.add_data(qr_data)
+            # qr.add_data(qr_data)
             qr.make(fit=True)
             img = qr.make_image(fill='black', back_color='white')
             buffer = BytesIO()
@@ -534,14 +572,14 @@ def view_qr_code(request, member_id):
                             import qrcode
                             from io import BytesIO
 
-                            qr_data = f"http://127.0.0.1:8000/scan-attendance/?member_id={member.id}"
+                            # qr_data = f"http://127.0.0.1:8000/scan-attendance/?member_id={member.id}"
                             qr = qrcode.QRCode(
                                 version=1,
                                 error_correction=qrcode.constants.ERROR_CORRECT_L,
                                 box_size=10,
                                 border=4,
                             )
-                            qr.add_data(qr_data)
+                            # qr.add_data(qr_data)
                             qr.make(fit=True)
                             img = qr.make_image(fill='black', back_color='white')
                             buffer = BytesIO()
