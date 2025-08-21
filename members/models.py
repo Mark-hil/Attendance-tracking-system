@@ -121,22 +121,35 @@ def generate_qr_code_for_attendance(member):
     # Store without expiration (permanent until deleted)
     cache.set(cache_key, token_data, timeout=None)
     
-    # Include the token in the QR code URL - using the correct endpoint /mark-attendance/
-    qr_data = f"http://127.0.0.1:8000/mark-attendance/?member_id={member.id}&token={token}"
+    # Hardcode the production URL for QR codes
+    base_url = 'https://attendance-tracking-system-5d9n.onrender.com'
+    qr_data = f"{base_url}/scan-attendance/?member_id={member.id}&token={token}"
+    print(f"[DEBUG] Generated QR code URL: {qr_data}")  # Debug log
     
+    # Create QR code with higher error correction and larger size
     qr = qrcode.QRCode(
         version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,  # Higher error correction
+        box_size=12,  # Slightly larger box size
+        border=6,     # Larger border
     )
     qr.add_data(qr_data)
     qr.make(fit=True)
     
-    img = qr.make_image(fill='black', back_color='white')
+    # Create image with high contrast
+    img = qr.make_image(
+        fill_color='black',
+        back_color='white',
+        image_factory=None,  # Use default image factory
+    )
+    
+    # Ensure the QR code is large enough to be scanned
+    size = (img.size[0] * 2, img.size[1] * 2)  # Double the size
+    img = img.resize(size, resample=0)
+    
     buffer = BytesIO()
-    img.save(buffer, format='PNG')
-    qr_code_file = ContentFile(buffer.getvalue(), 'attendance_qrcode.png')
+    img.save(buffer, format='PNG', quality=100)
+    qr_code_file = ContentFile(buffer.getvalue(), f'attendance_qrcode_{member.id}.png')
     
     return qr_code_file
     # def save(self, *args, **kwargs):

@@ -233,11 +233,19 @@ def attendance_report(request):
 
 def mark_attendance(request):
     # Get parameters from request
-    member_id = request.GET.get('member_id')
-    token = request.GET.get('token')
+    member_id = request.GET.get('member_id') or request.POST.get('member_id')
+    token = request.GET.get('token') or request.POST.get('token')
+    
+    # Debug logging
+    print(f"[DEBUG] mark_attendance called with member_id: {member_id}, token: {token}")
+    print(f"[DEBUG] Request method: {request.method}")
+    print(f"[DEBUG] Request GET params: {request.GET}")
+    print(f"[DEBUG] Request POST params: {request.POST}")
     
     # Validate required parameters
     if not all([member_id, token]):
+        error_msg = f'Missing required parameters. Got member_id: {member_id}, token: {token}'
+        print(f"[ERROR] {error_msg}")
         return JsonResponse({
             'success': False,
             'message': 'Missing required parameters. Please scan the QR code again.'
@@ -257,7 +265,14 @@ def mark_attendance(request):
     from datetime import datetime, date
     
     cache_key = f'qr_token_{member_id}_{token}'
+    print(f"[DEBUG] Looking up cache key: {cache_key}")
     token_data = cache.get(cache_key, None)
+    print(f"[DEBUG] Token data from cache: {token_data}")
+    
+    if token_data and 'member_id' not in token_data:
+        print("[WARNING] Token data exists but missing member_id, fixing...")
+        token_data['member_id'] = member_id
+        cache.set(cache_key, token_data, timeout=None)
     
     # Check if token exists and is valid
     if not token_data or not token_data.get('valid', False):
@@ -519,19 +534,46 @@ def view_qr_code(request, member_id):
         try:
             import qrcode
             from io import BytesIO
+            from django.core.files.base import ContentFile
+            from django.core.cache import cache
+            import uuid
 
-            # qr_data = f"http://127.0.0.1:8000/scan-attendance/?member_id={member.id}"
+            # Generate a token for the QR code
+            token = str(uuid.uuid4())
+            cache_key = f'qr_token_{member.id}_{token}'
+            
+            # Store token data
+            token_data = {
+                'valid': True,
+                'last_used': None,
+                'member_id': member.id
+            }
+            cache.set(cache_key, token_data, timeout=None)
+            
+            # Create QR code with production URL
+            base_url = 'https://attendance-tracking-system-5d9n.onrender.com'
+            qr_data = f"{base_url}/scan-attendance/?member_id={member.id}&token={token}"
+            
+            # Generate QR code with high error correction
             qr = qrcode.QRCode(
                 version=1,
-                error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=10,
-                border=4,
+                error_correction=qrcode.constants.ERROR_CORRECT_H,
+                box_size=12,
+                border=6,
             )
-            # qr.add_data(qr_data)
+            qr.add_data(qr_data)
             qr.make(fit=True)
-            img = qr.make_image(fill='black', back_color='white')
+            
+            # Create image with high contrast
+            img = qr.make_image(fill_color='black', back_color='white')
+            
+            # Ensure the QR code is large enough to be scanned
+            size = (img.size[0] * 2, img.size[1] * 2)
+            img = img.resize(size, resample=0)
+            
+            # Save to buffer
             buffer = BytesIO()
-            img.save(buffer, format='PNG')
+            img.save(buffer, format='PNG', quality=100)
             image_data = buffer.getvalue()
             # Persist for future requests
             member.qr_code = image_data

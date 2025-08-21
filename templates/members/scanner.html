@@ -97,17 +97,34 @@
 <script>
   // Function to handle successful QR code scan
   function onScanSuccess(decodedText, decodedResult) {
-    console.log(`Code scanned: ${decodedText}`, decodedResult);
+    console.log('QR Code scanned. Raw data:', decodedText);
+    console.log('Decoded result:', decodedResult);
     
     // Extract parameters from the decoded text (URL)
     let memberId, token;
     try {
-      const url = new URL(decodedText);
-      memberId = url.searchParams.get('member_id');
-      token = url.searchParams.get('token');
+      // First try to parse as URL
+      let url;
+      try {
+        url = new URL(decodedText);
+      } catch (e) {
+        // If it's not a valid URL, try to parse as query string
+        console.log('Not a valid URL, trying to parse as query string');
+        const params = new URLSearchParams(decodedText);
+        memberId = params.get('member_id');
+        token = params.get('token');
+      } 
+      
+      // If URL parsing was successful, get params from URL
+      if (url) {
+        memberId = url.searchParams.get('member_id');
+        token = url.searchParams.get('token');
+      }
+      
+      console.log('Extracted values - memberId:', memberId, 'token:', token);
       
       if (!memberId || !token) {
-        throw new Error('Missing required parameters');
+        throw new Error('Missing required parameters in QR code');
       }
     } catch (error) {
       addToRecentScans('error', 'Invalid QR code format');
@@ -123,8 +140,11 @@
     // Display a loading message while fetching data
     document.getElementById('loading').classList.remove('hidden');
     
-    // Make a fetch request to the mark_attendance endpoint with both member_id and token
-    fetch(`/mark-attendance/?member_id=${memberId}&token=${encodeURIComponent(token)}`, {
+    // Make a fetch request to the scan-attendance endpoint with both member_id and token
+    const url = `/scan-attendance/?member_id=${encodeURIComponent(memberId)}&token=${encodeURIComponent(token)}`;
+    console.log('Making request to:', url);
+    
+    fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

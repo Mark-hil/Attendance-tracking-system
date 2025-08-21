@@ -39,6 +39,9 @@ CACHES = {
     }
 }
 
+# Site framework settings
+SITE_ID = 1
+
 # No expiration for QR codes - they'll be permanent until user is deleted
 
 # Application definition
@@ -48,6 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
+    'django.contrib.sites',  # Required for the sites framework
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
