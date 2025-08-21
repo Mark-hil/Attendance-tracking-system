@@ -121,8 +121,8 @@ def generate_qr_code_for_attendance(member):
     # Store without expiration (permanent until deleted)
     cache.set(cache_key, token_data, timeout=None)
     
-    # Include the token in the QR code URL
-    qr_data = f"http://127.0.0.1:8000/scan-attendance/?member_id={member.id}&attendance_type={active_setting.attendance_type}&token={token}"
+    # Include the token in the QR code URL - using the correct endpoint /mark-attendance/
+    qr_data = f"http://127.0.0.1:8000/mark-attendance/?member_id={member.id}&token={token}"
     
     qr = qrcode.QRCode(
         version=1,

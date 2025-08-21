@@ -16,7 +16,6 @@ urlpatterns = [
     path('mark-attendance/', views.mark_attendance, name='mark_attendance'),
     # path('set-attendance-session/', views.set_attendance_session, name='set_attendance_session'),
     path('set-attendance-type/', views.set_attendance_type, name='set_attendance_type'),
-    path('scan-attendance/', views.mark_attendance, name='mark_attendance'),
     path('attendance-report/export/', views.export_attendance_report, name='export_attendance_report'),
     path('print_badges/', views.print_badges, name='print_badges'),
     path('qr-code/<int:member_id>/', views.view_qr_code, name='view_qr_code'),
