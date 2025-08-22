@@ -236,11 +236,28 @@ def mark_attendance(request):
     member_id = request.GET.get('member_id') or request.POST.get('member_id')
     token = request.GET.get('token') or request.POST.get('token')
     
+    # Check for raw data in POST body (for JSON requests)
+    if not all([member_id, token]) and request.body:
+        try:
+            import json
+            body_data = json.loads(request.body)
+            member_id = member_id or body_data.get('member_id')
+            token = token or body_data.get('token')
+        except json.JSONDecodeError:
+            pass
+    
     # Debug logging
-    print(f"[DEBUG] mark_attendance called with member_id: {member_id}, token: {token}")
+    print("\n" + "="*50)
+    print("[DEBUG] mark_attendance called")
+    print("-"*50)
     print(f"[DEBUG] Request method: {request.method}")
-    print(f"[DEBUG] Request GET params: {request.GET}")
-    print(f"[DEBUG] Request POST params: {request.POST}")
+    print(f"[DEBUG] Raw GET params: {dict(request.GET)}")
+    print(f"[DEBUG] Raw POST params: {dict(request.POST)}")
+    if request.body:
+        print(f"[DEBUG] Request body: {request.body}")
+    print(f"[DEBUG] Extracted member_id: {member_id} (type: {type(member_id)})")
+    print(f"[DEBUG] Extracted token: {token} (type: {type(token)})")
+    print("="*50 + "\n")
     
     # Validate required parameters
     if not all([member_id, token]):
@@ -253,11 +270,15 @@ def mark_attendance(request):
     
     # Validate member_id is a number
     try:
-        member_id = int(member_id)
-    except (ValueError, TypeError):
+        if isinstance(member_id, str) and member_id.isdigit():
+            member_id = int(member_id)
+        elif not isinstance(member_id, int):
+            raise ValueError("Invalid member ID format")
+    except (ValueError, TypeError) as e:
+        print(f"[ERROR] Invalid member ID: {e}")
         return JsonResponse({
             'success': False,
-            'message': 'Invalid member ID format.'
+            'message': 'Invalid member ID format. Must be a number.'
         }, status=400)
     
     # Validate token exists and is valid
@@ -521,7 +542,37 @@ def set_attendance_type(request):
 
 def print_badges(request):
     members = Member.objects.all()
-    return render(request, 'members/print_badges.html', {'members': members})
+    # Generate tokens for each member if they don't have one
+    from django.core.cache import cache
+    import uuid
+    
+    member_data = []
+    for member in members:
+        # Generate a new token for this member
+        token = str(uuid.uuid4())
+        cache_key = f'qr_token_{member.id}_{token}'
+        
+        # Store token data
+        token_data = {
+            'valid': True,
+            'last_used': None,
+            'member_id': member.id,
+            'member_name': f"{member.first_name} {member.last_name}"
+        }
+        cache.set(cache_key, token_data, timeout=None)
+        
+        # Add member data with token
+        member_data.append({
+            'id': str(member.id),  # Ensure ID is a string for template concatenation
+            'first_name': member.first_name,
+            'last_name': member.last_name,
+            'token': token,
+            'full_name': f"{member.first_name} {member.last_name}"
+        })
+        
+        print(f"[DEBUG] Generated token for member {member.id} ({member.first_name} {member.last_name}): {token}")
+    
+    return render(request, 'members/print_badges.html', {'members': member_data})
 
 
 
