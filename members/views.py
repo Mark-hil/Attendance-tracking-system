@@ -241,9 +241,14 @@ def mark_attendance(request):
         try:
             import json
             body_data = json.loads(request.body)
-            member_id = member_id or body_data.get('member_id')
-            token = token or body_data.get('token')
-        except json.JSONDecodeError:
+            # Check for the new QR code format: 'member:ID:TOKEN'
+            if 'data' in body_data and body_data['data'].startswith('member:'):
+                _, member_id, token = body_data['data'].split(':')
+            else:
+                member_id = member_id or body_data.get('member_id')
+                token = token or body_data.get('token')
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"[ERROR] Error parsing request data: {e}")
             pass
     
     # Debug logging

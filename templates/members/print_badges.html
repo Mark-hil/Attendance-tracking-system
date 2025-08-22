@@ -54,19 +54,17 @@
     <div class="badge-container">
         {% for member in members %}
     <div class="badge" style="position: relative;">
-        {% with base_url='https://attendance-tracking-system-5d9n.onrender.com' %}
-        {% with qr_url=base_url|add:'/scan-attendance/?'|add:'member_id='|add:member.id|add:'&token='|add:member.token %}
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ qr_url|urlencode }}" alt="QR Code">
+        {% with qr_data='member:'|add:member.id|add:':'|add:member.token %}
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ qr_data|urlencode }}" alt="QR Code">
             <div style="font-size: 10px; word-break: break-all; margin-top: 5px; color: red; background: white; padding: 5px; border: 1px solid #ccc;">
                 <strong>Debug Info:</strong><br>
-                URL: {{ qr_url }}<br>
                 Member ID: {{ member.id }}<br>
                 Token: {{ member.token }}
             </div>
-            <!-- Hidden input with the same URL for easy copy-paste -->
-            <input type="text" value="{{ qr_url }}" style="position: absolute; opacity: 0; width: 1px; height: 1px;" id="qr_url_{{ member.id }}">
+            <!-- Hidden input with the data for easy copy-paste -->
+            <input type="text" value="{{ qr_data }}" style="position: absolute; opacity: 0; width: 1px; height: 1px;" id="qr_data_{{ member.id }}">
         {% endwith %}
-        {% endwith %}
+        
         <div class="badge-name">{{ member.first_name }} {{ member.last_name }}</div>
     </div>
     {% endfor %}
