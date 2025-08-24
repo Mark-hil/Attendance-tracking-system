@@ -111,26 +111,12 @@ def add_member(request):
             form.save_m2m()  # Save many-to-many relationships
             
             try:
-                # Now that we have an ID, generate the QR code
-                qr_data = f"http://{request.get_host()}/scan-attendance/?member_id={member.id}"
-                qr = qrcode.QRCode(
-                    version=1,
-                    error_correction=qrcode.constants.ERROR_CORRECT_L,
-                    box_size=10,
-                    border=4,
-                )
-                qr.add_data(qr_data)
-                qr.make(fit=True)
-
-                # Save QR Code as binary data
-                img = qr.make_image(fill='black', back_color='white')
-                buffer = BytesIO()
-                img.save(buffer, format='PNG')
-                
-                # Update the member with the QR code
-                member.qr_code = buffer.getvalue()
-                member.save(update_fields=['qr_code'])  # Only update the QR code field
-                
+                # Use the generate_qr_code_for_attendance function to create the QR code
+                from .models import generate_qr_code_for_attendance
+                qr_code_file = generate_qr_code_for_attendance(member)
+                if qr_code_file:
+                    member.qr_code = qr_code_file.read()
+                    member.save(update_fields=["qr_code"])
                 return redirect('member_list')
                 
             except Exception as e:
@@ -232,24 +218,8 @@ def attendance_report(request):
 
 
 def mark_attendance(request):
-    # Get parameters from request
-    member_id = request.GET.get('member_id') or request.POST.get('member_id')
-    token = request.GET.get('token') or request.POST.get('token')
-    
-    # Check for raw data in POST body (for JSON requests)
-    if not all([member_id, token]) and request.body:
-        try:
-            import json
-            body_data = json.loads(request.body)
-            # Check for the new QR code format: 'member:ID:TOKEN'
-            if 'data' in body_data and body_data['data'].startswith('member:'):
-                _, member_id, token = body_data['data'].split(':')
-            else:
-                member_id = member_id or body_data.get('member_id')
-                token = token or body_data.get('token')
-        except (json.JSONDecodeError, ValueError) as e:
-            print(f"[ERROR] Error parsing request data: {e}")
-            pass
+    # Initialize variables
+    member_id = None
     
     # Debug logging
     print("\n" + "="*50)
@@ -258,68 +228,61 @@ def mark_attendance(request):
     print(f"[DEBUG] Request method: {request.method}")
     print(f"[DEBUG] Raw GET params: {dict(request.GET)}")
     print(f"[DEBUG] Raw POST params: {dict(request.POST)}")
-    if request.body:
-        print(f"[DEBUG] Request body: {request.body}")
-    print(f"[DEBUG] Extracted member_id: {member_id} (type: {type(member_id)})")
-    print(f"[DEBUG] Extracted token: {token} (type: {type(token)})")
-    print("="*50 + "\n")
     
-    # Validate required parameters
-    if not all([member_id, token]):
-        error_msg = f'Missing required parameters. Got member_id: {member_id}, token: {token}'
-        print(f"[ERROR] {error_msg}")
+    # Try to get member_id and member_name from different sources
+    member_name = None
+    if request.method == 'GET':
+        member_id = request.GET.get('member_id')
+        member_name = request.GET.get('name')
+    elif request.method == 'POST':
+        if request.content_type == 'application/json':
+            try:
+                data = json.loads(request.body)
+                member_id = data.get('member_id')
+                member_name = data.get('member_name') or data.get('name')  # Try both 'member_name' and 'name' keys
+                print(f"[DEBUG] JSON data: {data}")
+            except json.JSONDecodeError as e:
+                print(f"[DEBUG] JSON decode error: {str(e)}")
+                return JsonResponse({'success': False, 'message': 'Invalid JSON data'}, status=400)
+        else:
+            member_id = request.POST.get('member_id')
+            member_name = request.POST.get('member_name') or request.POST.get('name')
+    
+    # If name is URL-encoded, decode it
+    if member_name and ('%' in member_name or '+' in member_name):
+        from urllib.parse import unquote_plus
+        member_name = unquote_plus(member_name)
+    
+    print(f"[DEBUG] After extraction - member_id: {member_id}, member_name: {member_name}")
+    
+    # If we have a member_id but no name, try to get the member from the database
+    if member_id and not member_name:
+        try:
+            member = Member.objects.get(id=member_id)
+            member_name = f"{member.first_name} {member.last_name}"
+            print(f"[DEBUG] Fetched name from database: {member_name}")
+        except (Member.DoesNotExist, ValueError):
+            print(f"[DEBUG] Could not find member with ID {member_id}")
+            pass
+    
+    # Debug output
+    print(f"[DEBUG] Extracted member_id: {member_id} (type: {type(member_id)})")
+    
+    # Validate member_id
+    if not member_id:
         return JsonResponse({
             'success': False,
-            'message': 'Missing required parameters. Please scan the QR code again.'
+            'message': 'Member ID is required.'
         }, status=400)
     
-    # Validate member_id is a number
+    # Convert member_id to integer if it's a string
     try:
-        if isinstance(member_id, str) and member_id.isdigit():
-            member_id = int(member_id)
-        elif not isinstance(member_id, int):
-            raise ValueError("Invalid member ID format")
-    except (ValueError, TypeError) as e:
-        print(f"[ERROR] Invalid member ID: {e}")
+        member_id = int(member_id)
+    except (ValueError, TypeError):
         return JsonResponse({
             'success': False,
             'message': 'Invalid member ID format. Must be a number.'
         }, status=400)
-    
-    # Validate token exists and is valid
-    from django.core.cache import cache
-    from datetime import datetime, date
-    
-    cache_key = f'qr_token_{member_id}_{token}'
-    print(f"[DEBUG] Looking up cache key: {cache_key}")
-    token_data = cache.get(cache_key, None)
-    print(f"[DEBUG] Token data from cache: {token_data}")
-    
-    if token_data and 'member_id' not in token_data:
-        print("[WARNING] Token data exists but missing member_id, fixing...")
-        token_data['member_id'] = member_id
-        cache.set(cache_key, token_data, timeout=None)
-    
-    # Check if token exists and is valid
-    if not token_data or not token_data.get('valid', False):
-        return JsonResponse({
-            'success': False,
-            'message': 'Invalid or expired QR code. Please generate a new one.'
-        }, status=403)
-    
-    # Check if token was already used today
-    today = date.today()
-    last_used = token_data.get('last_used')
-    
-    if last_used and last_used.date() == today:
-        return JsonResponse({
-            'success': False,
-            'message': 'This QR code has already been used today. Please try again tomorrow.'
-        }, status=403)
-    
-    # Update the token with today's date (no expiration)
-    token_data['last_used'] = datetime.now()
-    cache.set(cache_key, token_data, timeout=None)  # Permanent storage
     
     try:
         # Get the member
@@ -358,7 +321,7 @@ def mark_attendance(request):
         if attendance_exists:
             return JsonResponse({
                 'success': False, 
-                'message': 'Attendance has already been recorded for today.'
+                'message': f'Attendance for {member.first_name} {member.last_name} has already been recorded for today.'
             })
 
         # Mark attendance if it doesn't already exist
@@ -393,22 +356,31 @@ def mark_attendance(request):
                 'message': 'Invalid attendance type configured'
             }, status=400)
 
+        # Use the name from the request if provided, otherwise use the one from the member record
+        display_name = member_name or f'{member.first_name} {member.last_name}'
+        
         return JsonResponse({
             'success': True, 
-            'message': f'{attendance_type} attendance recorded successfully!',
-            'member_name': f'{member.first_name} {member.last_name}',
+            'message': f'{attendance_type} attendance recorded for {display_name}!',
+            'member_name': display_name,
             'attendance_type': attendance_type,
             'date': today.strftime('%Y-%m-%d'),
             'time': timezone.now().strftime('%H:%M:%S')
         })
 
-    except ValueError:
+    except Member.DoesNotExist:
         return JsonResponse({
             'success': False,
-            'message': 'Invalid member ID format'
-        }, status=400)
-
-    return JsonResponse({'success': False, 'message': 'Failed to record attendance. Please try again.'})
+            'message': 'Member not found.'
+        }, status=404)
+    except Exception as e:
+        print(f"[ERROR] Error processing attendance: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'message': f'Error processing attendance: {str(e)}'
+        }, status=500)
 
 def attendance_report(request):
     # Get the current date or use a date provided by the user
@@ -546,36 +518,16 @@ def set_attendance_type(request):
 
 
 def print_badges(request):
-    members = Member.objects.all()
-    # Generate tokens for each member if they don't have one
-    from django.core.cache import cache
-    import uuid
+    # Get all members and prepare their data for the template
+    members = Member.objects.all().values('id', 'first_name', 'last_name')
     
-    member_data = []
-    for member in members:
-        # Generate a new token for this member
-        token = str(uuid.uuid4())
-        cache_key = f'qr_token_{member.id}_{token}'
-        
-        # Store token data
-        token_data = {
-            'valid': True,
-            'last_used': None,
-            'member_id': member.id,
-            'member_name': f"{member.first_name} {member.last_name}"
-        }
-        cache.set(cache_key, token_data, timeout=None)
-        
-        # Add member data with token
-        member_data.append({
-            'id': str(member.id),  # Ensure ID is a string for template concatenation
-            'first_name': member.first_name,
-            'last_name': member.last_name,
-            'token': token,
-            'full_name': f"{member.first_name} {member.last_name}"
-        })
-        
-        print(f"[DEBUG] Generated token for member {member.id} ({member.first_name} {member.last_name}): {token}")
+    # Prepare member data for the template
+    member_data = [{
+        'id': str(member['id']),  # Ensure ID is a string for template concatenation
+        'first_name': member['first_name'],
+        'last_name': member['last_name'],
+        'full_name': f"{member['first_name']} {member['last_name']}"
+    } for member in members]
     
     return render(request, 'members/print_badges.html', {'members': member_data})
 
@@ -590,11 +542,10 @@ def view_qr_code(request, member_id):
         try:
             import qrcode
             from io import BytesIO
-            from django.core.files.base import ContentFile
-            from django.core.cache import cache
             import uuid
-
-            # Generate a token for the QR code
+            from django.core.cache import cache
+            
+            # Generate a unique token for this QR code
             token = str(uuid.uuid4())
             cache_key = f'qr_token_{member.id}_{token}'
             
@@ -606,9 +557,11 @@ def view_qr_code(request, member_id):
             }
             cache.set(cache_key, token_data, timeout=None)
             
-            # Create QR code with production URL
+            # Create QR code with production URL and include member name
+            from urllib.parse import quote_plus
             base_url = 'https://attendance-tracking-system-5d9n.onrender.com'
-            qr_data = f"{base_url}/scan-attendance/?member_id={member.id}&token={token}"
+            full_name = f"{member.first_name} {member.last_name}"
+            qr_data = f"{base_url}/scan-attendance/?member_id={member.id}&name={quote_plus(full_name)}&token={token}"
             
             # Generate QR code with high error correction
             qr = qrcode.QRCode(
@@ -631,13 +584,19 @@ def view_qr_code(request, member_id):
             buffer = BytesIO()
             img.save(buffer, format='PNG', quality=100)
             image_data = buffer.getvalue()
+            
             # Persist for future requests
             member.qr_code = image_data
             member.save(update_fields=["qr_code"])
+            
             return HttpResponse(image_data, content_type="image/png")
+            
         except Exception as regen_err:
             logging.error(f"Could not generate QR code for member {member.id}: {regen_err}")
             return HttpResponse("QR code not available", status=404)
+            
+    # If QR code exists, serve it directly
+    return HttpResponse(member.qr_code, content_type="image/png")
 
     if member.qr_code:
         # `qr_code` can be stored either as raw binary (BinaryField) or as a file path/FileField.

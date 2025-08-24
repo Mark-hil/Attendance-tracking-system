@@ -79,6 +79,30 @@
     </div>
   </div>
   
+  <!-- Scan Result Section -->
+  <div class="mt-6 md:mt-8 bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-gray-100">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+      <i class="fas fa-user-check text-orange-500 mr-2"></i> Scan Result
+    </h2>
+    <div id="scan-result" class="text-center py-4">
+      <div id="no-scan" class="text-sm text-gray-500 italic">
+        No scan data available. Scan a QR code to see member details.
+      </div>
+      <div id="scan-details" class="hidden">
+        <div class="flex flex-col items-center">
+          <div id="qr-preview" class="mb-4 p-2 bg-white rounded-lg border border-gray-200">
+            <!-- QR code will be shown here -->
+          </div>
+          <div class="text-center">
+            <h3 id="member-name" class="text-lg font-semibold text-gray-800"></h3>
+            <p id="member-id" class="text-sm text-gray-600 mt-1">Member ID: <span class="font-mono"></span></p>
+            <p id="scan-time" class="text-xs text-gray-500 mt-2"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
   <!-- Recent Scans Section -->
   <div class="mt-6 md:mt-8 bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-gray-100">
     <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -95,81 +119,155 @@
 <!-- QR Code Scanner Script -->
 <script src="https://unpkg.com/html5-qrcode@2.0.9/dist/html5-qrcode.min.js"></script>
 <script>
+  // Function to get cookie by name
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  // Function to show error message
+  function showError(message) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: message,
+      confirmButtonColor: '#f97316'
+    });
+  }
+
+  // Function to update scan result display
+  function updateScanResult(memberId, memberName) {
+    const scanDetails = document.getElementById('scan-details');
+    const noScan = document.getElementById('no-scan');
+    
+    // Show scan details and hide 'no scan' message
+    scanDetails.classList.remove('hidden');
+    noScan.style.display = 'none';
+    
+    // Update member info
+    document.getElementById('member-name').textContent = memberName || 'Unknown Member';
+    document.getElementById('member-id').querySelector('span').textContent = memberId;
+    document.getElementById('scan-time').textContent = new Date().toLocaleString();
+    
+    // Generate QR code preview (using the same QR code that was scanned)
+    const qrPreview = document.getElementById('qr-preview');
+    qrPreview.innerHTML = `
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(memberId)}" 
+           alt="Scanned QR Code" 
+           class="mx-auto">
+    `;
+  }
+  
   // Function to handle successful QR code scan
   function onScanSuccess(decodedText, decodedResult) {
-    console.log('QR Code scanned. Raw data:', decodedText);
-    console.log('Decoded result:', decodedResult);
+    console.log('QR Code scanned:', decodedText);
     
-    // Extract parameters from the decoded text (URL)
-    let memberId, token;
     try {
-      // First try to parse as URL
-      let url;
+      let memberId, memberName;
+      
+      // First try to parse as URL with query parameters
       try {
-        url = new URL(decodedText);
+        // Check if the decoded text is a URL
+        if (decodedText.includes('?')) {
+          const url = new URL(decodedText);
+          const params = new URLSearchParams(url.search);
+          
+          // Extract member ID and name from URL
+          memberId = params.get('member_id');
+          memberName = params.get('name');
+          
+          console.log('URL detected - ID:', memberId, 'Name:', memberName);
+        }
       } catch (e) {
-        // If it's not a valid URL, try to parse as query string
-        console.log('Not a valid URL, trying to parse as query string');
-        const params = new URLSearchParams(decodedText);
-        memberId = params.get('member_id');
-        token = params.get('token');
-      } 
-      
-      // If URL parsing was successful, get params from URL
-      if (url) {
-        memberId = url.searchParams.get('member_id');
-        token = url.searchParams.get('token');
+        console.log('Not a URL or error parsing URL:', e);
       }
       
-      console.log('Extracted values - memberId:', memberId, 'token:', token);
+      // If we don't have a member ID yet, try to extract just the ID
+      if (!memberId) {
+        // Try to find a numeric ID in the text
+        const idMatch = decodedText.match(/\d+/);
+        if (idMatch) {
+          memberId = idMatch[0];
+          console.log('Extracted ID from text:', memberId);
+        } else {
+          memberId = decodedText.trim();
+          console.log('Using full text as ID:', memberId);
+        }
+      }
       
-      if (!memberId || !token) {
-        throw new Error('Missing required parameters in QR code');
+      // If we still don't have a name, set a default
+      if (!memberName) {
+        memberName = 'Member';
       }
-    } catch (error) {
-      addToRecentScans('error', 'Invalid QR code format');
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Invalid QR code format. Please scan a valid member QR code.',
-        confirmButtonColor: '#f97316'
-      });
-      return;
-    }
-    
-    // Display a loading message while fetching data
-    document.getElementById('loading').classList.remove('hidden');
-    
-    // Make a fetch request to the scan-attendance endpoint with both member_id and token
-    const url = `/scan-attendance/?member_id=${encodeURIComponent(memberId)}&token=${encodeURIComponent(token)}`;
-    console.log('Making request to:', url);
-    
-    fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      credentials: 'same-origin'
-    })
-    .then(response => {
-      if (!response.ok) {
-        return response.json().then(err => { throw err; });
+      
+      // Validate that it's a valid ID (numeric)
+      if (!memberId || !/^\d+$/.test(memberId)) {
+        throw new Error('Invalid QR code format');
       }
-      return response.json();
-    })
-    .then(data => {
-        document.getElementById('loading').classList.add('hidden'); // Hide loading
+      
+      console.log('Member ID:', memberId);
+      console.log('Member Name:', memberName);
+      
+      // Show loading indicator
+      document.getElementById('loading').classList.remove('hidden');
+      
+      // Make a POST request to mark_attendance with member_id
+      const apiUrl = '/scan-attendance/';
+      console.log('Making request to:', apiUrl);
+      
+      // Update the UI immediately with the scanned ID and name
+      updateScanResult(memberId, memberName);
+      
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          member_id: memberId,
+          member_name: memberName
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(err => { throw err; });
+        }
+        return response.json();
+      })
+      .then(data => {
+        document.getElementById('loading').classList.add('hidden');
         
         // Add to recent scans
         addToRecentScans(data.success ? 'success' : 'error', data.message);
         
         if (data.success) {
+          // Get member name from the response or use the one from the message
+          const memberName = data.member_name || 
+                           (data.message.match(/for (.+?) at/) ? data.message.match(/for (.+?) at/)[1].trim() : 'Member');
+          
+          // Update the scan result with the member details
+          updateScanResult(memberId, memberName);
+          
           // Show success message with SweetAlert2
+          const displayMessage = `Attendance recorded for ${memberName}`;
+          
           Swal.fire({
             icon: 'success',
             title: 'Success',
-            text: data.message,
+            text: displayMessage,
             confirmButtonColor: '#f97316',
             showClass: {
               popup: 'animate__animated animate__fadeInDown'
@@ -179,48 +277,38 @@
             }
           });
         } else {
-          // Show error message with SweetAlert2
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: data.message,
-            confirmButtonColor: '#f97316',
-            showClass: {
-              popup: 'animate__animated animate__fadeInDown'
-            },
-            hideClass: {
-              popup: 'animate__animated animate__fadeOutUp'
-            }
-          });
+          // Show user-friendly error message
+          let errorMessage = 'An error occurred while processing the QR code';
+          if (data.message.includes('invalid') || data.message.includes('Invalid')) {
+            errorMessage = 'Invalid QR code. Please scan a valid member QR code.';
+          } else if (data.message.includes('expired') || data.message.includes('Expired')) {
+            errorMessage = 'This QR code has expired. Please generate a new one.';
+          } else if (data.message.includes('already') || data.message.includes('already')) {
+            errorMessage = 'Attendance already recorded for this session.';
+          }
+          
+          showError(errorMessage);
         }
       })
       .catch(error => {
-        document.getElementById('loading').classList.add('hidden'); // Hide loading
         console.error('Error:', error);
-        
-        // Add to recent scans
+        document.getElementById('loading').classList.add('hidden');
         addToRecentScans('error', 'Network error. Please try again.');
-        
-        // Show error message with SweetAlert2
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'Network error. Please try again.',
-          confirmButtonColor: '#f97316',
-          showClass: {
-            popup: 'animate__animated animate__fadeInDown'
-          },
-          hideClass: {
-            popup: 'animate__animated animate__fadeOutUp'
-          }
-        });
+        showError('An error occurred while processing your request. Please try again.');
       });
+      
+    } catch (error) {
+      console.error('Error processing QR code:', error);
+      document.getElementById('loading').classList.add('hidden');
+      addToRecentScans('error', 'Invalid QR code format');
+      showError('Invalid QR code. Please scan a valid member QR code.');
+    }
   }
 
   // Function to handle QR code scan failure
   function onScanFailure(error) {
     console.warn(`QR Code scan failed: ${error}`);
-  }
+  }  
   
   // Function to add scan to recent scans list
   function addToRecentScans(type, message) {

@@ -1,5 +1,6 @@
 <!-- members/templates/members/print_badges.html -->
 {% load static %}
+{% load custom_filters %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -10,7 +11,7 @@
     <title>Print Badges</title>
     <style>
         .badge-container {
-            background-image: url("{% static 'img/denim.png' %}");
+            {% comment %} background-image: url("{% static 'img/denim.png' %}"); {% endcomment %}
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
@@ -18,7 +19,7 @@
         }
         
         .badge {
-            width: 200px;
+            width: 250px;
             height: 300px;
             border: 1px solid #000;
             padding: 20px;
@@ -33,9 +34,18 @@
         }
         
         .badge-name {
-            margin-top: 10px;
+            margin-top: 30px;
             font-size: 18px;
             font-weight: bold;
+        
+            word-break: break-all;
+             
+            color: #666; 
+            background: #f8f9fa; 
+            padding: 5px; 
+            border: 1px solid #eee; 
+            border-radius: 4px; 
+            text-align: center;
         }
         
         @media print {
@@ -54,15 +64,11 @@
     <div class="badge-container">
         {% for member in members %}
     <div class="badge" style="position: relative;">
-        {% with qr_data='member:'|add:member.id|add:':'|add:member.token %}
+        {% with qr_data=member.first_name|add:' '|add:member.last_name|add:' '|stringformat:'s'|add:member.id|stringformat:'s' %}
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ qr_data|urlencode }}" alt="QR Code">
-            <div style="font-size: 10px; word-break: break-all; margin-top: 5px; color: red; background: white; padding: 5px; border: 1px solid #ccc;">
-                <strong>Debug Info:</strong><br>
-                Member ID: {{ member.id }}<br>
-                Token: {{ member.token }}
-            </div>
+            
             <!-- Hidden input with the data for easy copy-paste -->
-            <input type="text" value="{{ qr_data }}" style="position: absolute; opacity: 0; width: 1px; height: 1px;" id="qr_data_{{ member.id }}">
+            <input type="text" value="{{ qr_data }}" style="position: absolute; opacity: 0; width: 1px; height: 1px;" id="qr_data_{{ member.id }}" name="qr_data_{{ member.first_name }}">
         {% endwith %}
         
         <div class="badge-name">{{ member.first_name }} {{ member.last_name }}</div>

@@ -122,8 +122,11 @@ def generate_qr_code_for_attendance(member):
     cache.set(cache_key, token_data, timeout=None)
     
     # Hardcode the production URL for QR codes
+    from urllib.parse import quote_plus
     base_url = 'https://attendance-tracking-system-5d9n.onrender.com'
-    qr_data = f"{base_url}/scan-attendance/?member_id={member.id}&token={token}"
+    # Include both member ID and name in the QR code with proper URL encoding
+    full_name = f"{member.first_name} {member.last_name}"
+    qr_data = f"{base_url}/scan-attendance/?member_id={member.id}&name={quote_plus(full_name)}&token={token}"
     print(f"[DEBUG] Generated QR code URL: {qr_data}")  # Debug log
     
     # Create QR code with higher error correction and larger size
