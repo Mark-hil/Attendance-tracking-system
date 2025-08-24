@@ -139,12 +139,21 @@ def edit_member(request, pk):
         form = MemberEditForm(instance=member)
     return render(request, 'members/edit_member.html', {'form': form, 'member': member})
 
+from django.db import transaction
+from django.contrib import messages
+
 def delete_member(request, pk):
-    member = get_object_or_404(Member, pk=pk)
-    if request.method == 'POST':
-        member.delete()
+    try:
+        with transaction.atomic():
+            member = get_object_or_404(Member, pk=pk)
+            if request.method == 'POST':
+                member.delete()
+                messages.success(request, 'Member deleted successfully')
+                return redirect('member_list')
+            return render(request, 'members/delete_member.html', {'member': member})
+    except Exception as e:
+        messages.error(request, f'Error deleting member: {str(e)}')
         return redirect('member_list')
-    return render(request, 'members/delete_member.html', {'member': member})
 
 
 def export_members_csv(request):
