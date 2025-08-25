@@ -40,9 +40,11 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 def member_list(request):
     from django.utils import timezone
     from datetime import timedelta
+    from django.template.defaultfilters import register
     
     query = request.GET.get('q')
     page = request.GET.get('page', 1)
+    per_page = int(request.GET.get('per_page', 10))
     
     # Base queryset
     if query:
@@ -60,8 +62,12 @@ def member_list(request):
     else:
         members = Member.objects.all()
     
+    # Order by last name, then first name
+    members = members.order_by('last_name', 'first_name')
+    
     # Pagination
-    paginator = Paginator(members.order_by('last_name', 'first_name'), 10)  # 10 items per page
+    paginator = Paginator(members, per_page)
+    paginator.per_page = per_page  # Store per_page value for template
     
     try:
         members_page = paginator.page(page)

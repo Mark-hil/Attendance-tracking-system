@@ -1,4 +1,5 @@
-{% extends 'members/base2.html' %} 
+{% extends 'members/base2.html' %}
+{% load humanize %}
 {% block title %}Member List{% endblock %} 
 {% block content %}
 
@@ -53,14 +54,36 @@
         <span class="font-medium">{{ paginator.count }}</span> members
       </div>
       
-      <!-- Items per page selector -->
+      <!-- Dynamic Items per page selector -->
       <div class="flex items-center space-x-2">
         <span class="text-sm text-gray-600">Items per page:</span>
         <select id="per-page" class="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500">
-          <option value="10" {% if paginator.per_page == 10 %}selected{% endif %}>10</option>
-          <option value="25" {% if paginator.per_page == 25 %}selected{% endif %}>25</option>
-          <option value="50" {% if paginator.per_page == 50 %}selected{% endif %}>50</option>
-          <option value="100" {% if paginator.per_page == 100 %}selected{% endif %}>100</option>
+          {% with total=paginator.count %}
+            {% if total > 1000 %}
+              <option value="250" {% if paginator.per_page == 250 %}selected{% endif %}>250</option>
+              <option value="500" {% if paginator.per_page == 500 %}selected{% endif %}>500</option>
+              <option value="1000" {% if paginator.per_page == 1000 or paginator.per_page > 1000 and paginator.per_page < total %}selected{% endif %}>1,000</option>
+              <option value="{{ total }}" {% if paginator.per_page == total %}selected{% endif %}>All ({{ total|intcomma }})</option>
+            {% elif total > 500 %}
+              <option value="100" {% if paginator.per_page == 100 %}selected{% endif %}>100</option>
+              <option value="250" {% if paginator.per_page == 250 %}selected{% endif %}>250</option>
+              <option value="500" {% if paginator.per_page == 500 or paginator.per_page > 500 and paginator.per_page < total %}selected{% endif %}>500</option>
+              <option value="{{ total }}" {% if paginator.per_page == total %}selected{% endif %}>All ({{ total|intcomma }})</option>
+            {% elif total > 100 %}
+              <option value="50" {% if paginator.per_page == 50 %}selected{% endif %}>50</option>
+              <option value="100" {% if paginator.per_page == 100 or paginator.per_page > 100 and paginator.per_page < total %}selected{% endif %}>100</option>
+              <option value="250" {% if paginator.per_page == 250 or paginator.per_page > 250 and paginator.per_page < total %}selected{% endif %}>250</option>
+              <option value="{{ total }}" {% if paginator.per_page == total %}selected{% endif %}>All ({{ total|intcomma }})</option>
+            {% elif total > 50 %}
+              <option value="25" {% if paginator.per_page == 25 %}selected{% endif %}>25</option>
+              <option value="50" {% if paginator.per_page == 50 or paginator.per_page > 50 and paginator.per_page < total %}selected{% endif %}>50</option>
+              <option value="{{ total }}" {% if paginator.per_page == total %}selected{% endif %}>All ({{ total|intcomma }})</option>
+            {% else %}
+              <option value="10" {% if paginator.per_page == 10 or paginator.per_page > 10 and paginator.per_page < total %}selected{% endif %}>10</option>
+              <option value="25" {% if paginator.per_page == 25 or paginator.per_page > 25 and paginator.per_page < total %}selected{% endif %}>25</option>
+              <option value="{{ total }}" {% if paginator.per_page == total %}selected{% endif %}>All ({{ total|intcomma }})</option>
+            {% endif %}
+          {% endwith %}
         </select>
       </div>
     </div>

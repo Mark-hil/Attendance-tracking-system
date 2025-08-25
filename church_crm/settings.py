@@ -74,7 +74,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',  # Required for the sites framework
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    'django.contrib.humanize',  # Required for intcomma filter
     'members',
     'widget_tweaks',
     'corsheaders',
