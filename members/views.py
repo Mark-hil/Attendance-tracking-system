@@ -130,14 +130,31 @@ def add_member(request):
 
 def edit_member(request, pk):
     member = get_object_or_404(Member, pk=pk)
+    
     if request.method == 'POST':
         form = MemberEditForm(request.POST, request.FILES, instance=member)
+        
         if form.is_valid():
-            form.save()
-            return redirect('member_list')
+            try:
+                member = form.save(commit=False)
+                if 'picture' in request.FILES:
+                    member.picture = request.FILES['picture']
+                member.save()
+                form.save_m2m()
+                messages.success(request, 'Member updated successfully!')
+                return redirect('member_list')
+            except Exception as e:
+                messages.error(request, f'Error updating member: {str(e)}')
+        else:
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = MemberEditForm(instance=member)
-    return render(request, 'members/edit_member.html', {'form': form, 'member': member})
+    
+    return render(request, 'members/edit_member.html', {
+        'form': form,
+        'member': member,
+        'title': f'Edit {member.first_name} {member.last_name}'
+    })
 
 from django.db import transaction
 from django.contrib import messages

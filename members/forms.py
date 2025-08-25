@@ -144,9 +144,107 @@ class MemberForm(forms.ModelForm):
 
 # Member form for editing (similar to MemberForm, but if needed, more specific widgets/fields could be added)
 class MemberEditForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Add required attribute to all required fields
+        for field_name, field in self.fields.items():
+            if field_name != 'picture':  # Picture is optional
+                field.required = True
+                if field_name in ['first_name', 'last_name', 'email', 'phone_number', 'address', 
+                                'guardian_name', 'guardian_phone_number', 'specialization']:
+                    self.fields[field_name].widget.attrs.update({
+                        'required': 'required',
+                        'aria-required': 'true'
+                    })
+
     class Meta:
         model = Member
-        exclude = ('qr_code',)
+        fields = [
+            'first_name', 'last_name', 'email', 'phone_number', 'address',
+            'guardian_name', 'guardian_phone_number', 'date_of_birth',
+            'gender', 'status', 'specialization', 'level_of_profession', 'picture'
+        ]
+        widgets = {
+            'date_of_birth': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all',
+                'required': 'required',
+                'aria-required': 'true'
+            }),
+            'first_name': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all',
+                'placeholder': 'Enter First Name',
+                'required': 'required',
+                'aria-required': 'true'
+            }),
+            'last_name': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all',
+                'placeholder': 'Enter Last Name',
+                'required': 'required',
+                'aria-required': 'true'
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all',
+                'placeholder': 'Enter Email',
+                'required': 'required',
+                'aria-required': 'true'
+            }),
+            'phone_number': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all',
+                'placeholder': 'Enter Phone Number',
+                'required': 'required',
+                'aria-required': 'true'
+            }),
+            'address': forms.Textarea(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all',
+                'placeholder': 'Enter Full Address',
+                'rows': 2,
+                'required': 'required',
+                'aria-required': 'true'
+            }),
+            'guardian_name': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all',
+                'placeholder': 'Enter Guardian Name',
+                'required': 'required',
+                'aria-required': 'true'
+            }),
+            'guardian_phone_number': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all',
+                'placeholder': 'Enter Guardian Phone Number',
+                'required': 'required',
+                'aria-required': 'true'
+            }),
+            'specialization': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all',
+                'placeholder': 'Enter Specialization',
+                'required': 'required',
+                'aria-required': 'true'
+            }),
+            'status': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all bg-white',
+                'required': 'required',
+                'aria-required': 'true'
+            }),
+            'gender': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all bg-white',
+                'required': 'required',
+                'aria-required': 'true'
+            }),
+            'level_of_profession': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all bg-white',
+                'required': 'required',
+                'aria-required': 'true'
+            }),
+            'picture': forms.ClearableFileInput(attrs={
+                'class': 'block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make the qr_code field readonly in the form
+        if 'qr_code' in self.fields:
+            self.fields['qr_code'].widget.attrs['readonly'] = True
 
 # Attendance setting form for events or small group attendance
 class AttendanceSettingForm(forms.ModelForm):
