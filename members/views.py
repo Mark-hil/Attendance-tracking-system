@@ -35,11 +35,16 @@ from .forms import AttendanceSettingForm
 def scanner(request):
     return render(request, 'members/scanner.html')
 
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
 def member_list(request):
     from django.utils import timezone
     from datetime import timedelta
     
     query = request.GET.get('q')
+    page = request.GET.get('page', 1)
+    
+    # Base queryset
     if query:
         members = Member.objects.filter(
             first_name__icontains=query
@@ -55,20 +60,39 @@ def member_list(request):
     else:
         members = Member.objects.all()
     
+    # Pagination
+    paginator = Paginator(members.order_by('last_name', 'first_name'), 10)  # 10 items per page
+    
+    try:
+        members_page = paginator.page(page)
+    except PageNotAnInteger:
+        members_page = paginator.page(1)
+    except EmptyPage:
+        members_page = paginator.page(paginator.num_pages)
+    
+    # Handle AJAX requests for pagination
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        html = render_to_string('members/member_list_rows.html', {'members': members}, request=request)
+        html = render_to_string('members/member_list_rows.html', {
+            'members': members_page,
+            'page_obj': members_page,
+            'is_paginated': paginator.num_pages > 1,
+            'paginator': paginator
+        }, request=request)
         return HttpResponse(html)
     
-    # Calculate statistics
-    total_members = Member.objects.count()
-    active_members = Member.objects.filter(status='active').count()
+    # Calculate statistics (using the base queryset to include all matching results)
+    total_members = members.count()
+    active_members = members.filter(status='active').count()
     
     # Get the first day of the current month
     first_day_of_month = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     new_this_month = Member.objects.filter(date_joined__gte=first_day_of_month).count()
     
     context = {
-        'members': members,
+        'members': members_page,
+        'page_obj': members_page,  # For pagination template tags
+        'is_paginated': paginator.num_pages > 1,
+        'paginator': paginator,
         'member_count': total_members,
         'active_count': active_members,
         'new_members': new_this_month,
